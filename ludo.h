@@ -121,5 +121,39 @@ extern stack<MoveRecord> moveHistory;
 // 3. LINKED LIST: Stores recent game event log
 extern list<string> actionLog;
 
+// 4. ARRAYS: Board grid coordinates
+extern int boardPathX[TOTAL_PATH_CELLS];
+extern int boardPathY[TOTAL_PATH_CELLS];
+extern int corridorX[MAX_PLAYERS][HOME_CORRIDOR_CELLS];
+extern int corridorY[MAX_PLAYERS][HOME_CORRIDOR_CELLS];
+extern bool safeCells[TOTAL_PATH_CELLS];
+
+// ========================== FUNCTION DECLARATIONS ==========================
+
+// board.cpp: Layout and Drawing
+void initializeBoard();
+Vector2f getGridPixel(int gx, int gy);
+Vector2f getHomePosition(int playerIndex, int tokenId);
+Vector2f getTokenPixelPosition(int playerIndex, int tokenId);
+void drawBoard(RenderWindow &window);
+void drawTokens(RenderWindow &window);
+void drawDice(RenderWindow &window);
+void drawUI(RenderWindow &window);
+void drawStartScreen(RenderWindow &window);
+void drawWinScreen(RenderWindow &window);
+
+// game.cpp: Rules and Logic
+void initializeGame(int playerCount = 4);
+int rollDice();
+bool canMoveToken(int playerIndex, int tokenId);
+bool hasAnyValidMove(int playerIndex);
+bool moveToken(int playerIndex, int tokenId);
+bool undoLastMove();
+void addActionLog(const string &msg);
+void nextTurn();
+bool checkWin();
+bool selectTokenById(int tokenId);
+bool selectTokenAtPosition(float mouseX, float mouseY);
+int getPlayerStartCell(int playerIndex);
 
 #endif // LUDO_H
