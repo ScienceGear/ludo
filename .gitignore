@@ -1,0 +1,14 @@
+# Compiled binaries and object files
+*.o
+*.obj
+*.exe
+
+# Visual Studio / VS Code
+.vscode/
+.vs/
+*.user
+*.suo
+
+# OS generated files
+.DS_Store
+Thumbs.db
