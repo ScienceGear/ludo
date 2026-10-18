@@ -92,4 +92,67 @@ void initializeBoard() {
 
     // Bottom arm going up (cells 39 to 43)
     boardPathX[39] = 6; boardPathY[39] = 13; // Blue Start Cell
+    boardPathX[40] = 6; boardPathY[40] = 12;
+    boardPathX[41] = 6; boardPathY[41] = 11;
+    boardPathX[42] = 6; boardPathY[42] = 10;
+    boardPathX[43] = 6; boardPathY[43] = 9;
+
+    // Left arm going left (cells 44 to 49)
+    boardPathX[44] = 5; boardPathY[44] = 8;
+    boardPathX[45] = 4; boardPathY[45] = 8;
+    boardPathX[46] = 3; boardPathY[46] = 8;
+    boardPathX[47] = 2; boardPathY[47] = 8;  // Star / Safe Cell
+    boardPathX[48] = 1; boardPathY[48] = 8;
+    boardPathX[49] = 0; boardPathY[49] = 8;
+
+    // Left edge transition (cells 50, 51)
+    boardPathX[50] = 0; boardPathY[50] = 7;
+    boardPathX[51] = 0; boardPathY[51] = 6;
+
+    // 3. Mark the 8 safe cells (4 Start cells + 4 Star cells)
+    safeCells[0]  = true; // Red Start
+    safeCells[13] = true; // Green Start
+    safeCells[26] = true; // Yellow Start
+    safeCells[39] = true; // Blue Start
+
+    safeCells[8]  = true; // Red Star
+    safeCells[21] = true; // Green Star
+    safeCells[34] = true; // Yellow Star
+    safeCells[47] = true; // Blue Star
+
+    // 4. Define the 4 colored Home Corridors (5 cells each)
+    // Red corridor: moving right on row 7
+    for (int i = 0; i < 5; i++) {
+        corridorX[0][i] = 1 + i;
+        corridorY[0][i] = 7;
+    }
+    // Green corridor: moving down on col 7
+    for (int i = 0; i < 5; i++) {
+        corridorX[1][i] = 7;
+        corridorY[1][i] = 1 + i;
+    }
+    // Yellow corridor: moving left on row 7
+    for (int i = 0; i < 5; i++) {
+        corridorX[2][i] = 13 - i;
+        corridorY[2][i] = 7;
+    }
+    // Blue corridor: moving up on col 7
+    for (int i = 0; i < 5; i++) {
+        corridorX[3][i] = 7;
+        corridorY[3][i] = 13 - i;
+    }
 }
+
+// Returns the pixel center of a player's token slot inside their home base
+Vector2f getHomePosition(int playerIndex, int tokenId) {
+    float baseX = 0, baseY = 0;
+    switch (playerIndex) {
+        case 0: // Red: top-left (0..5, 0..5)
+            baseX = BOARD_X;
+            baseY = BOARD_Y;
+            break;
+        case 1: // Green: top-right (9..14, 0..5)
+            baseX = BOARD_X + 9 * CELL_SIZE;
+            baseY = BOARD_Y;
+            break;
+void drawBoard(RenderWindow &window) {}
