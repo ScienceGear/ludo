@@ -56,5 +56,28 @@ const float BOARD_X = 20.0f;         // Board position X
 const float BOARD_Y = 50.0f;         // Board position Y
 const float TOKEN_RADIUS = 13.0f;    // Radius of token circle
 
+// ========================== DATA STRUCTURES ==========================
+
+/*
+ * Token structure:
+ * Holds the state of one token.
+ */
+struct Token {
+    int id;         // Token ID (0, 1, 2, 3)
+    int step;       // Progress: 0 = base, 1-51 = main track, 52-56 = corridor, 57 = finished
+    int status;     // 0 = HOME (base), 1 = ACTIVE (on board), 2 = FINISHED
+};
+
+/*
+ * Player structure:
+ * Holds information for one player.
+ */
+struct Player {
+    string name;                     // Display name (e.g. "Player 1 (Red)")
+    Color color;                     // Primary theme color
+    Token tokens[TOKENS_PER_PLAYER]; // 4 tokens
+    int tokensFinished;              // Count of tokens that reached finish (0-4)
+};
+
 
 #endif // LUDO_H
