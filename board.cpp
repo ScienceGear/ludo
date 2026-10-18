@@ -336,4 +336,108 @@ void drawBoard(RenderWindow &window) {
             cell.setOutlineColor(Color(80, 80, 80));
             cell.setOutlineThickness(1.0f);
             window.draw(cell);
+        }
+    }
+
+    // 6. Draw Center Finish Area (3x3 grid = cols 6..8, rows 6..8)
+    float cx = BOARD_X + 7.5f * CELL_SIZE;
+    float cy = BOARD_Y + 7.5f * CELL_SIZE;
+    Vector2f centerPoint(cx, cy);
+
+    Vector2f topLeft(BOARD_X + 6 * CELL_SIZE, BOARD_Y + 6 * CELL_SIZE);
+    Vector2f topRight(BOARD_X + 9 * CELL_SIZE, BOARD_Y + 6 * CELL_SIZE);
+    Vector2f bottomRight(BOARD_X + 9 * CELL_SIZE, BOARD_Y + 9 * CELL_SIZE);
+    Vector2f bottomLeft(BOARD_X + 6 * CELL_SIZE, BOARD_Y + 9 * CELL_SIZE);
+
+    // Left Triangle: Red
+    ConvexShape redTri(3);
+    redTri.setPoint(0, topLeft);
+    redTri.setPoint(1, bottomLeft);
+    redTri.setPoint(2, centerPoint);
+    redTri.setFillColor(players[0].color);
+    redTri.setOutlineColor(Color(30, 30, 30));
+    redTri.setOutlineThickness(1.0f);
+    window.draw(redTri);
+
+    // Top Triangle: Green
+    ConvexShape greenTri(3);
+    greenTri.setPoint(0, topLeft);
+    greenTri.setPoint(1, topRight);
+    greenTri.setPoint(2, centerPoint);
+    greenTri.setFillColor(players[1].color);
+    greenTri.setOutlineColor(Color(30, 30, 30));
+    greenTri.setOutlineThickness(1.0f);
+    window.draw(greenTri);
+
+    // Right Triangle: Yellow
+    ConvexShape yellowTri(3);
+    yellowTri.setPoint(0, topRight);
+    yellowTri.setPoint(1, bottomRight);
+    yellowTri.setPoint(2, centerPoint);
+    yellowTri.setFillColor(players[2].color);
+    yellowTri.setOutlineColor(Color(30, 30, 30));
+    yellowTri.setOutlineThickness(1.0f);
+    window.draw(yellowTri);
+
+    // Bottom Triangle: Blue
+    ConvexShape blueTri(3);
+    blueTri.setPoint(0, bottomLeft);
+    blueTri.setPoint(1, bottomRight);
+    blueTri.setPoint(2, centerPoint);
+    blueTri.setFillColor(players[3].color);
+    blueTri.setOutlineColor(Color(30, 30, 30));
+    blueTri.setOutlineThickness(1.0f);
+    window.draw(blueTri);
+
+    // Center Gold Circle
+    CircleShape centerCircle(14.0f);
+    centerCircle.setOrigin(Vector2f(14.0f, 14.0f));
+    centerCircle.setPosition(centerPoint);
+    centerCircle.setFillColor(Color(255, 215, 0));
+    centerCircle.setOutlineColor(Color(30, 30, 30));
+    centerCircle.setOutlineThickness(2.0f);
+    window.draw(centerCircle);
 }
+
+// Draws all tokens with player color, token number, and highlights
+void drawTokens(RenderWindow &window) {
+    for (int p = 0; p < numPlayers; p++) {
+        for (int t = 0; t < TOKENS_PER_PLAYER; t++) {
+            Vector2f pos = getTokenPixelPosition(p, t);
+
+            // If on main path or safe cell, offset slightly if sharing cell with other active tokens
+            if (players[p].tokens[t].step >= 1 && players[p].tokens[t].step <= 51) {
+                int sharedCount = 0;
+                int myIndex = 0;
+                for (int op = 0; op < numPlayers; op++) {
+                    for (int ot = 0; ot < TOKENS_PER_PLAYER; ot++) {
+                        if (players[op].tokens[ot].status == 1 &&
+                            players[op].tokens[ot].step >= 1 &&
+                            players[op].tokens[ot].step <= 51) {
+                            int myCell = (p * 13 + (players[p].tokens[t].step - 1)) % TOTAL_PATH_CELLS;
+                            int otherCell = (op * 13 + (players[op].tokens[ot].step - 1)) % TOTAL_PATH_CELLS;
+                            if (myCell == otherCell) {
+                                if (op < p || (op == p && ot < t)) myIndex++;
+                                sharedCount++;
+                            }
+                        }
+                    }
+                }
+                if (sharedCount > 1) {
+                    float offsetAngle = (myIndex * 2.0f * 3.14159f) / sharedCount;
+                    pos.x += cos(offsetAngle) * 8.0f;
+                    pos.y += sin(offsetAngle) * 8.0f;
+                }
+            }
+
+            // Highlight ring if this token can be moved right now
+            if (!isRolling && !gameOver && p == currentPlayerIndex && canMoveToken(p, t)) {
+                CircleShape glow(TOKEN_RADIUS + 6.0f);
+                glow.setOrigin(Vector2f(TOKEN_RADIUS + 6.0f, TOKEN_RADIUS + 6.0f));
+                glow.setPosition(pos);
+                glow.setFillColor(Color(255, 230, 80, 160));
+                glow.setOutlineColor(Color(255, 215, 0));
+                glow.setOutlineThickness(2.5f);
+                window.draw(glow);
+            }
+
