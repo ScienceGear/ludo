@@ -107,4 +107,51 @@ int rollDice() {
     addActionLog(players[currentPlayerIndex].name + " rolled a " + to_string(roll));
 
     // Check if player has any legal moves with this roll
+    if (!hasAnyValidMove(currentPlayerIndex)) {
+        if (canRollAgain) {
+            statusMessage = "Rolled a 6! No moves available. Roll again!";
+            isRolling = true;
+            canRollAgain = false;
+        } else {
+            statusMessage = "Rolled " + to_string(roll) + ". No valid move! Passing turn.";
+            nextTurn();
+        }
+    } else {
+        if (roll == 6) {
+            statusMessage = "Rolled a 6! Select a token (1-4) to move.";
+        } else {
+            statusMessage = "Rolled " + to_string(roll) + ". Select a token (1-4) to move.";
+        }
+    }
+
+    return roll;
+}
+
+// Checks if a specific token can be moved
+bool canMoveToken(int playerIndex, int tokenId) {
+    if (tokenId < 0 || tokenId >= TOKENS_PER_PLAYER) return false;
+    const Token &tok = players[playerIndex].tokens[tokenId];
+
+    // Already reached the center finish
+    if (tok.status == 2 || tok.step == FINISH_STEP) {
+        return false;
+    }
+
+    // Inside home base: needs a 6 to come out
+    if (tok.status == 0 || tok.step == 0) {
+        return (currentDiceValue == 6);
+    }
+
+    // Active token: must not overshoot finish (step 57)
+    if (tok.status == 1) {
+        return (tok.step + currentDiceValue <= FINISH_STEP);
+    }
+
+    return false;
+}
+
+// Checks if the player can move at least one of their 4 tokens
+bool hasAnyValidMove(int playerIndex) {
+    for (int t = 0; t < TOKENS_PER_PLAYER; t++) {
+        if (canMoveToken(playerIndex, t)) {
 }
