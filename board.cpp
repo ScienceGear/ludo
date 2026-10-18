@@ -26,5 +26,70 @@ Vector2f getGridPixel(int gx, int gy) {
                     BOARD_Y + gy * CELL_SIZE + CELL_SIZE / 2.0f);
 }
 
-void initializeBoard() {}
-void drawBoard(RenderWindow &window) {}
+void initializeBoard() {
+    // 1. Initialize all safe cells to false
+    for (int i = 0; i < TOTAL_PATH_CELLS; i++) {
+        safeCells[i] = false;
+    }
+
+    // 2. Define the 52-cell main path in (gx, gy) grid coordinates
+    // Red arm going right (cells 0 to 4)
+    boardPathX[0] = 1;  boardPathY[0] = 6;  // Red Start Cell
+    boardPathX[1] = 2;  boardPathY[1] = 6;
+    boardPathX[2] = 3;  boardPathY[2] = 6;
+    boardPathX[3] = 4;  boardPathY[3] = 6;
+    boardPathX[4] = 5;  boardPathY[4] = 6;
+
+    // Top arm going up (cells 5 to 10)
+    boardPathX[5] = 6;  boardPathY[5] = 5;
+    boardPathX[6] = 6;  boardPathY[6] = 4;
+    boardPathX[7] = 6;  boardPathY[7] = 3;
+    boardPathX[8] = 6;  boardPathY[8] = 2;  // Star / Safe Cell
+    boardPathX[9] = 6;  boardPathY[9] = 1;
+    boardPathX[10] = 6; boardPathY[10] = 0;
+
+    // Top edge transition (cells 11, 12)
+    boardPathX[11] = 7; boardPathY[11] = 0;
+    boardPathX[12] = 8; boardPathY[12] = 0;
+
+    // Top arm going down (cells 13 to 17)
+    boardPathX[13] = 8; boardPathY[13] = 1; // Green Start Cell
+    boardPathX[14] = 8; boardPathY[14] = 2;
+    boardPathX[15] = 8; boardPathY[15] = 3;
+    boardPathX[16] = 8; boardPathY[16] = 4;
+    boardPathX[17] = 8; boardPathY[17] = 5;
+
+    // Right arm going right (cells 18 to 23)
+    boardPathX[18] = 9;  boardPathY[18] = 6;
+    boardPathX[19] = 10; boardPathY[19] = 6;
+    boardPathX[20] = 11; boardPathY[20] = 6;
+    boardPathX[21] = 12; boardPathY[21] = 6; // Star / Safe Cell
+    boardPathX[22] = 13; boardPathY[22] = 6;
+    boardPathX[23] = 14; boardPathY[23] = 6;
+
+    // Right edge transition (cells 24, 25)
+    boardPathX[24] = 14; boardPathY[24] = 7;
+    boardPathX[25] = 14; boardPathY[25] = 8;
+
+    // Right arm going left (cells 26 to 30)
+    boardPathX[26] = 13; boardPathY[26] = 8; // Yellow Start Cell
+    boardPathX[27] = 12; boardPathY[27] = 8;
+    boardPathX[28] = 11; boardPathY[28] = 8;
+    boardPathX[29] = 10; boardPathY[29] = 8;
+    boardPathX[30] = 9;  boardPathY[30] = 8;
+
+    // Bottom arm going down (cells 31 to 36)
+    boardPathX[31] = 8; boardPathY[31] = 9;
+    boardPathX[32] = 8; boardPathY[32] = 10;
+    boardPathX[33] = 8; boardPathY[33] = 11;
+    boardPathX[34] = 8; boardPathY[34] = 12; // Star / Safe Cell
+    boardPathX[35] = 8; boardPathY[35] = 13;
+    boardPathX[36] = 8; boardPathY[36] = 14;
+
+    // Bottom edge transition (cells 37, 38)
+    boardPathX[37] = 7; boardPathY[37] = 14;
+    boardPathX[38] = 6; boardPathY[38] = 14;
+
+    // Bottom arm going up (cells 39 to 43)
+    boardPathX[39] = 6; boardPathY[39] = 13; // Blue Start Cell
+}
