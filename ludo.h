@@ -79,5 +79,47 @@ struct Player {
     int tokensFinished;              // Count of tokens that reached finish (0-4)
 };
 
+/*
+ * STACK ELEMENT: MoveRecord
+ * Used by std::stack<MoveRecord> to implement the UNDO operation (LIFO).
+ */
+struct MoveRecord {
+    int playerIndex;
+    int tokenId;
+    int prevStep;
+    int prevStatus;
+    int diceValue;
+    bool wasRolling;
+    bool captured;
+    int capturedPlayer;
+    int capturedTokenId;
+    int capturedPrevStep;
+};
+
+// ========================== GLOBAL STATE & DATA STRUCTURES ==========================
+
+extern Font gameFont;
+
+// Game state variables
+extern int currentPlayerIndex;       // Whose turn it is (0, 1, 2, 3)
+extern int numPlayers;               // Number of players (default 4)
+extern bool isRolling;               // true = waiting for dice roll; false = waiting to choose token
+extern bool gameOver;                // true when a player brings all 4 tokens home
+extern int winnerIndex;              // Index of the winning player
+extern int currentDiceValue;         // Current dice number (1-6)
+extern bool canRollAgain;            // true if 6 rolled, capture made, or reached finish
+extern string statusMessage;         // Message shown on the sidebar for instructions
+
+extern Player players[MAX_PLAYERS];
+
+// 1. QUEUE: Tracks last 5 dice rolls (FIFO)
+extern queue<int> diceHistory;
+
+// 2. STACK: Tracks move history for Undo feature (LIFO)
+extern stack<MoveRecord> moveHistory;
+
+// 3. LINKED LIST: Stores recent game event log
+extern list<string> actionLog;
+
 
 #endif // LUDO_H
