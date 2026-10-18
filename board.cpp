@@ -534,3 +534,295 @@ void drawUI(RenderWindow &window) {
     const float panelH = 600.0f;
 
     // Sidebar Card Background
+    RectangleShape panel(Vector2f(panelW, panelH));
+    panel.setPosition(Vector2f(panelX, panelY));
+    panel.setFillColor(Color::White);
+    panel.setOutlineColor(Color(215, 220, 230));
+    panel.setOutlineThickness(2.0f);
+    window.draw(panel);
+
+    // 1. Current Player Turn Header Card
+    RectangleShape turnCard(Vector2f(panelW - 20, 38.0f));
+    turnCard.setPosition(Vector2f(panelX + 10, panelY + 10));
+    turnCard.setFillColor(players[currentPlayerIndex].color);
+    window.draw(turnCard);
+
+    Text turnText(gameFont, players[currentPlayerIndex].name + "'s Turn", 15);
+    turnText.setStyle(Text::Bold);
+    turnText.setFillColor(Color::White);
+    turnText.setPosition(Vector2f(panelX + 20, panelY + 20));
+    window.draw(turnText);
+
+    // 2. Dice Roll Prompt / Badge
+    if (isRolling) {
+        RectangleShape rollBtn(Vector2f(panelW - 60, 26.0f));
+        rollBtn.setPosition(Vector2f(panelX + 30, panelY + 118));
+        rollBtn.setFillColor(Color(40, 165, 80));
+        window.draw(rollBtn);
+
+        Text rollText(gameFont, "ROLL DICE (SPACE / Click)", 12);
+        rollText.setStyle(Text::Bold);
+        rollText.setFillColor(Color::White);
+        rollText.setPosition(Vector2f(panelX + 50, panelY + 123));
+        window.draw(rollText);
+    } else {
+        Text rollResult(gameFont, "DICE: " + to_string(currentDiceValue), 15);
+        rollResult.setStyle(Text::Bold);
+        rollResult.setFillColor(Color(40, 40, 40));
+        rollResult.setPosition(Vector2f(panelX + 115, panelY + 120));
+        window.draw(rollResult);
+    }
+
+    // 3. DATA STRUCTURE #1: QUEUE (FIFO) Display
+    // Shows recent dice rolls stored in std::queue<int> diceHistory
+    Text queueLabel(gameFont, "Dice History (Queue - FIFO):", 11);
+    queueLabel.setStyle(Text::Bold);
+    queueLabel.setFillColor(Color(80, 90, 105));
+    queueLabel.setPosition(Vector2f(panelX + 15, panelY + 150));
+    window.draw(queueLabel);
+
+    queue<int> tempQ = diceHistory;
+    int qIndex = 0;
+    while (!tempQ.empty()) {
+        int val = tempQ.front();
+        tempQ.pop();
+
+        RectangleShape qBox(Vector2f(22.0f, 20.0f));
+        qBox.setPosition(Vector2f(panelX + 15 + qIndex * 28.0f, panelY + 168));
+        qBox.setFillColor(Color(240, 244, 250));
+        qBox.setOutlineColor(Color(180, 190, 205));
+        qBox.setOutlineThickness(1.0f);
+        window.draw(qBox);
+
+        Text qText(gameFont, to_string(val), 11);
+        qText.setStyle(Text::Bold);
+        qText.setFillColor(Color(40, 50, 70));
+        qText.setPosition(Vector2f(panelX + 21 + qIndex * 28.0f, panelY + 171));
+        window.draw(qText);
+
+        if (!tempQ.empty()) {
+            Text arrow(gameFont, ">", 11);
+            arrow.setFillColor(Color(150, 160, 175));
+            arrow.setPosition(Vector2f(panelX + 39 + qIndex * 28.0f, panelY + 171));
+            window.draw(arrow);
+        }
+        qIndex++;
+    }
+
+    // 4. Status / Instruction Message
+    Text status(gameFont, statusMessage, 11);
+    status.setFillColor(Color(40, 40, 50));
+    status.setPosition(Vector2f(panelX + 15, panelY + 196));
+    window.draw(status);
+
+    // 5. Token Selection Buttons [1], [2], [3], [4]
+    Text chooseTitle(gameFont, "Select Token to Move (1-4):", 11);
+    chooseTitle.setStyle(Text::Bold);
+    chooseTitle.setFillColor(Color(50, 50, 60));
+    chooseTitle.setPosition(Vector2f(panelX + 15, panelY + 224));
+    window.draw(chooseTitle);
+
+    for (int t = 0; t < TOKENS_PER_PLAYER; t++) {
+        float btnY = panelY + 242.0f + t * 30.0f;
+        RectangleShape btn(Vector2f(panelW - 30, 26.0f));
+        btn.setPosition(Vector2f(panelX + 15, btnY));
+
+        bool canMove = (!isRolling && !gameOver && canMoveToken(currentPlayerIndex, t));
+
+        if (canMove) {
+            btn.setFillColor(players[currentPlayerIndex].color);
+            btn.setOutlineColor(Color(255, 215, 0));
+            btn.setOutlineThickness(1.5f);
+        } else {
+            btn.setFillColor(Color(245, 247, 250));
+            btn.setOutlineColor(Color(225, 230, 235));
+            btn.setOutlineThickness(1.0f);
+        }
+        window.draw(btn);
+
+        string tokenDesc = "Token " + to_string(t + 1) + ": ";
+        const Token &tok = players[currentPlayerIndex].tokens[t];
+        if (tok.status == 0) {
+            tokenDesc += (currentDiceValue == 6 && !isRolling) ? "Exit Home (Ready!)" : "In Base";
+        } else if (tok.status == 2) {
+            tokenDesc += "Finished!";
+        } else {
+            tokenDesc += "Step " + to_string(tok.step) + "/57";
+            if (canMove) tokenDesc += " (Can Move)";
+        }
+
+        Text btnText(gameFont, "[" + to_string(t + 1) + "] " + tokenDesc, 11);
+        btnText.setStyle(Text::Bold);
+        btnText.setFillColor(canMove ? Color::White : Color(110, 115, 125));
+        btnText.setPosition(Vector2f(panelX + 22, btnY + 6));
+        window.draw(btnText);
+    }
+
+    // 6. DATA STRUCTURE #2: STACK (LIFO) - UNDO BUTTON
+    float undoY = panelY + 368.0f;
+    RectangleShape undoBtn(Vector2f(panelW - 30, 26.0f));
+    undoBtn.setPosition(Vector2f(panelX + 15, undoY));
+    bool hasUndo = !moveHistory.empty();
+    if (hasUndo) {
+        undoBtn.setFillColor(Color(240, 130, 30));
+        undoBtn.setOutlineColor(Color(200, 100, 20));
+        undoBtn.setOutlineThickness(1.0f);
+    } else {
+        undoBtn.setFillColor(Color(240, 242, 245));
+        undoBtn.setOutlineColor(Color(220, 225, 230));
+        undoBtn.setOutlineThickness(1.0f);
+    }
+    window.draw(undoBtn);
+
+    string undoLabel = "[U] Undo Move (Stack: " + to_string(moveHistory.size()) + " moves)";
+    Text undoText(gameFont, undoLabel, 11);
+    undoText.setStyle(Text::Bold);
+    undoText.setFillColor(hasUndo ? Color::White : Color(140, 145, 155));
+    undoText.setPosition(Vector2f(panelX + 25, undoY + 6));
+    window.draw(undoText);
+
+    // 7. DATA STRUCTURE #3: LINKED LIST (std::list) - RECENT EVENT LOG
+    float logY = panelY + 402.0f;
+    Text logTitle(gameFont, "Game Events (Linked List):", 11);
+    logTitle.setStyle(Text::Bold);
+    logTitle.setFillColor(Color(80, 90, 105));
+    logTitle.setPosition(Vector2f(panelX + 15, logY));
+    window.draw(logTitle);
+
+    int logIndex = 0;
+    for (const string &msg : actionLog) {
+        Text logText(gameFont, "* " + msg, 10);
+        logText.setFillColor(Color(70, 75, 85));
+        logText.setPosition(Vector2f(panelX + 18, logY + 16.0f + logIndex * 15.0f));
+        window.draw(logText);
+        logIndex++;
+    }
+
+    // 8. Finished Tokens Progress
+    float scoreY = panelY + 478.0f;
+    RectangleShape line(Vector2f(panelW - 30, 1.0f));
+    line.setPosition(Vector2f(panelX + 15, scoreY));
+    line.setFillColor(Color(225, 230, 235));
+    window.draw(line);
+
+    Text scoreTitle(gameFont, "Tokens Finished:", 11);
+    scoreTitle.setStyle(Text::Bold);
+    scoreTitle.setFillColor(Color(50, 50, 50));
+    scoreTitle.setPosition(Vector2f(panelX + 15, scoreY + 5));
+    window.draw(scoreTitle);
+
+    for (int p = 0; p < numPlayers; p++) {
+        float px = panelX + 15 + (p % 2) * 140.0f;
+        float py = scoreY + 22.0f + (p / 2) * 16.0f;
+        CircleShape pDot(3.5f);
+        pDot.setPosition(Vector2f(px, py + 3));
+        pDot.setFillColor(players[p].color);
+        window.draw(pDot);
+
+        string pScore = players[p].name.substr(0, 8) + ": " + to_string(players[p].tokensFinished) + "/4";
+        Text pText(gameFont, pScore, 10);
+        pText.setFillColor(Color(60, 60, 60));
+        pText.setPosition(Vector2f(px + 10, py));
+        window.draw(pText);
+    }
+
+    // 9. Keyboard Controls Help Footer
+    float helpY = panelY + 540.0f;
+    RectangleShape line2(Vector2f(panelW - 30, 1.0f));
+    line2.setPosition(Vector2f(panelX + 15, helpY));
+    line2.setFillColor(Color(225, 230, 235));
+    window.draw(line2);
+
+    Text helpText(gameFont, "SPACE = Roll | 1-4 = Move | U = Undo\nR = Restart | ESC = Quit", 10);
+    helpText.setFillColor(Color(120, 125, 135));
+    helpText.setPosition(Vector2f(panelX + 15, helpY + 8));
+    window.draw(helpText);
+}
+
+// Draws the welcome start screen
+void drawStartScreen(RenderWindow &window) {
+    RectangleShape bg(Vector2f(WINDOW_WIDTH, WINDOW_HEIGHT));
+    bg.setFillColor(Color(40, 50, 75));
+    window.draw(bg);
+
+    // Decorative Ludo board silhouette in center
+    RectangleShape centerBox(Vector2f(340, 340));
+    centerBox.setPosition(Vector2f(WINDOW_WIDTH / 2.0f - 170, 140));
+    centerBox.setFillColor(Color(50, 65, 95));
+    centerBox.setOutlineColor(Color(255, 215, 0));
+    centerBox.setOutlineThickness(3.0f);
+    window.draw(centerBox);
+
+    Text title(gameFont, "LUDO GAME", 44);
+    title.setStyle(Text::Bold);
+    title.setFillColor(Color(255, 215, 0));
+    title.setPosition(Vector2f(WINDOW_WIDTH / 2.0f - 145, 170));
+    window.draw(title);
+
+    Text subtitle(gameFont, "Classic 4-Player Board Game", 18);
+    subtitle.setFillColor(Color(200, 220, 255));
+    subtitle.setPosition(Vector2f(WINDOW_WIDTH / 2.0f - 130, 235));
+    window.draw(subtitle);
+
+    // Start Button
+    RectangleShape startBtn(Vector2f(220, 48));
+    startBtn.setPosition(Vector2f(WINDOW_WIDTH / 2.0f - 110, 310));
+    startBtn.setFillColor(Color(45, 180, 85));
+    startBtn.setOutlineColor(Color::White);
+    startBtn.setOutlineThickness(2.0f);
+    window.draw(startBtn);
+
+    Text startText(gameFont, "PRESS ENTER TO PLAY", 15);
+    startText.setStyle(Text::Bold);
+    startText.setFillColor(Color::White);
+    startText.setPosition(Vector2f(WINDOW_WIDTH / 2.0f - 95, 324));
+    window.draw(startText);
+
+    // Rules summary
+    Text rules(gameFont, "* Roll 6 to bring token out of base\n* Safe cells (*) protect tokens from capture\n* First player with all 4 tokens home wins!", 13);
+    rules.setFillColor(Color(210, 225, 240));
+    rules.setPosition(Vector2f(WINDOW_WIDTH / 2.0f - 145, 380));
+    window.draw(rules);
+
+    Text footer(gameFont, "Developed in C++ using SFML", 13);
+    footer.setFillColor(Color(150, 170, 200));
+    footer.setPosition(Vector2f(WINDOW_WIDTH / 2.0f - 95, 520));
+    window.draw(footer);
+}
+
+// Draws the victory screen overlay
+void drawWinScreen(RenderWindow &window) {
+    RectangleShape overlay(Vector2f(WINDOW_WIDTH, WINDOW_HEIGHT));
+    overlay.setFillColor(Color(15, 20, 30, 215));
+    window.draw(overlay);
+
+    RectangleShape dialog(Vector2f(440, 260));
+    dialog.setPosition(Vector2f(WINDOW_WIDTH / 2.0f - 220, WINDOW_HEIGHT / 2.0f - 130));
+    dialog.setFillColor(Color::White);
+    dialog.setOutlineColor(players[winnerIndex].color);
+    dialog.setOutlineThickness(4.0f);
+    window.draw(dialog);
+
+    Text winTitle(gameFont, "WINNER!", 36);
+    winTitle.setStyle(Text::Bold);
+    winTitle.setFillColor(Color(255, 195, 0));
+    winTitle.setPosition(Vector2f(WINDOW_WIDTH / 2.0f - 85, WINDOW_HEIGHT / 2.0f - 105));
+    window.draw(winTitle);
+
+    Text winText(gameFont, players[winnerIndex].name + " WINS!", 22);
+    winText.setStyle(Text::Bold);
+    winText.setFillColor(players[winnerIndex].color);
+    winText.setPosition(Vector2f(WINDOW_WIDTH / 2.0f - 120, WINDOW_HEIGHT / 2.0f - 50));
+    window.draw(winText);
+
+    Text subText(gameFont, "All 4 tokens reached home safely!", 14);
+    subText.setFillColor(Color(70, 75, 85));
+    subText.setPosition(Vector2f(WINDOW_WIDTH / 2.0f - 110, WINDOW_HEIGHT / 2.0f - 10));
+    window.draw(subText);
+
+    Text restart(gameFont, "Press R to Play Again   |   Press ESC to Quit", 14);
+    restart.setStyle(Text::Bold);
+    restart.setFillColor(Color(40, 140, 220));
+    restart.setPosition(Vector2f(WINDOW_WIDTH / 2.0f - 160, WINDOW_HEIGHT / 2.0f + 45));
+    window.draw(restart);
+}
