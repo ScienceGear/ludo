@@ -441,3 +441,96 @@ void drawTokens(RenderWindow &window) {
                 window.draw(glow);
             }
 
+            // Outer dark outline
+            CircleShape tokenBorder(TOKEN_RADIUS + 1.5f);
+            tokenBorder.setOrigin(Vector2f(TOKEN_RADIUS + 1.5f, TOKEN_RADIUS + 1.5f));
+            tokenBorder.setPosition(pos);
+            tokenBorder.setFillColor(Color(30, 30, 30));
+            window.draw(tokenBorder);
+
+            // Main token circle
+            CircleShape token(TOKEN_RADIUS);
+            token.setOrigin(Vector2f(TOKEN_RADIUS, TOKEN_RADIUS));
+            token.setPosition(pos);
+            token.setFillColor(players[p].color);
+            window.draw(token);
+
+            // Inner highlight ring
+            CircleShape innerRing(TOKEN_RADIUS - 3.5f);
+            innerRing.setOrigin(Vector2f(TOKEN_RADIUS - 3.5f, TOKEN_RADIUS - 3.5f));
+            innerRing.setPosition(pos);
+            innerRing.setFillColor(players[p].color);
+            innerRing.setOutlineColor(Color(255, 255, 255, 120));
+            innerRing.setOutlineThickness(1.0f);
+            window.draw(innerRing);
+
+            // Token Number (1 to 4)
+            Text numText(gameFont, to_string(t + 1), 13);
+            numText.setStyle(Text::Bold);
+            numText.setFillColor(Color::White);
+            numText.setOrigin(Vector2f(4.0f, 9.0f));
+            numText.setPosition(pos);
+            window.draw(numText);
+        }
+    }
+}
+
+// Draws the 3D-styled dice with accurate dots
+void drawDice(RenderWindow &window) {
+    const float diceX = 760.0f;
+    const float diceY = 100.0f;
+    const float diceSize = 60.0f;
+
+    // Dice shadow
+    RectangleShape shadow(Vector2f(diceSize + 4, diceSize + 4));
+    shadow.setPosition(Vector2f(diceX - 2, diceY + 3));
+    shadow.setFillColor(Color(200, 205, 215));
+    window.draw(shadow);
+
+    // Dice body
+    RectangleShape dice(Vector2f(diceSize, diceSize));
+    dice.setPosition(Vector2f(diceX, diceY));
+    dice.setFillColor(Color::White);
+    dice.setOutlineColor(Color(40, 40, 40));
+    dice.setOutlineThickness(2.0f);
+    window.draw(dice);
+
+    // Helper to draw a single black dot
+    auto drawDot = [&](float dx, float dy) {
+        CircleShape dot(4.0f);
+        dot.setOrigin(Vector2f(4.0f, 4.0f));
+        dot.setPosition(Vector2f(diceX + dx, diceY + dy));
+        dot.setFillColor(Color(30, 30, 30));
+        window.draw(dot);
+    };
+
+    float mid = diceSize / 2.0f;
+    float p1 = 15.0f;
+    float p2 = diceSize - 15.0f;
+
+    // Dot patterns for 1 to 6
+    if (currentDiceValue == 1 || currentDiceValue == 3 || currentDiceValue == 5) {
+        drawDot(mid, mid); // Center dot
+    }
+    if (currentDiceValue >= 2) {
+        drawDot(p1, p1);
+        drawDot(p2, p2);
+    }
+    if (currentDiceValue >= 4) {
+        drawDot(p2, p1);
+        drawDot(p1, p2);
+    }
+    if (currentDiceValue == 6) {
+        drawDot(p1, mid);
+        drawDot(p2, mid);
+    }
+}
+
+// Draws the clean, modern sidebar UI displaying QUEUE, STACK, and LINKED LIST
+void drawUI(RenderWindow &window) {
+    const float panelX = 640.0f;
+    const float panelY = 50.0f;
+    const float panelW = 300.0f;
+    const float panelH = 600.0f;
+
+    // Sidebar Card Background
