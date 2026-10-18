@@ -259,4 +259,122 @@ bool moveToken(int playerIndex, int tokenId) {
     } else {
         nextTurn();
     }
+
+    return true;
+}
+
+// 2. STACK OPERATION (LIFO): Undo last move
+bool undoLastMove() {
+    if (moveHistory.empty()) {
+        statusMessage = "No moves to undo!";
+        return false;
+    }
+
+    // Pop the most recent move from the top of the stack (LIFO)
+    MoveRecord rec = moveHistory.top();
+    moveHistory.pop();
+
+    // If token was finished, decrement finished count
+    if (players[rec.playerIndex].tokens[rec.tokenId].status == 2 && rec.prevStatus != 2) {
+        players[rec.playerIndex].tokensFinished--;
+    }
+
+    // Restore token position and status
+    players[rec.playerIndex].tokens[rec.tokenId].step = rec.prevStep;
+    players[rec.playerIndex].tokens[rec.tokenId].status = rec.prevStatus;
+
+    // Restore captured opponent token if there was a capture
+    if (rec.captured) {
+        players[rec.capturedPlayer].tokens[rec.capturedTokenId].status = 1;
+        players[rec.capturedPlayer].tokens[rec.capturedTokenId].step = rec.capturedPrevStep;
+    }
+
+    // Restore turn and game state
+    currentPlayerIndex = rec.playerIndex;
+    currentDiceValue = rec.diceValue;
+    isRolling = false;
+    gameOver = false;
+    statusMessage = "Undid move for " + players[currentPlayerIndex].name + "! Press 1-4 to pick another.";
+    addActionLog("UNDO: Restored " + players[currentPlayerIndex].name + " Token " + to_string(rec.tokenId + 1));
+
+    return true;
+}
+
+// Switches turn to the next player
+void nextTurn() {
+    currentPlayerIndex = (currentPlayerIndex + 1) % numPlayers;
+    isRolling = true;
+    canRollAgain = false;
+    currentDiceValue = 1;
+    statusMessage = players[currentPlayerIndex].name + "'s turn. Press SPACE to roll!";
+}
+
+// Checks if any player has brought all 4 tokens to the finish
+bool checkWin() {
+    for (int p = 0; p < numPlayers; p++) {
+        if (players[p].tokensFinished == TOKENS_PER_PLAYER) {
+            gameOver = true;
+            winnerIndex = p;
+            statusMessage = players[p].name + " WINS THE GAME!";
+            addActionLog("GAME OVER: " + players[p].name + " WINS!");
+            return true;
+        }
+    }
+    return false;
+}
+
+// Selects token by 0-indexed ID (from keyboard 1-4 or UI buttons)
+bool selectTokenById(int tokenId) {
+    if (isRolling || gameOver) return false;
+    return moveToken(currentPlayerIndex, tokenId);
+}
+
+// Selects token or rolls dice by mouse click position
+bool selectTokenAtPosition(float mouseX, float mouseY) {
+    if (gameOver) return false;
+
+    // 1. Check if Dice or Roll button was clicked while waiting to roll
+    if (isRolling) {
+        // Dice rect: X [755, 830], Y [115, 190]
+        if (mouseX >= 750.0f && mouseX <= 835.0f && mouseY >= 115.0f && mouseY <= 190.0f) {
+            rollDice();
+            return true;
+        }
+        // "ROLL DICE" button: X [680, 920], Y [195, 230]
+        if (mouseX >= 680.0f && mouseX <= 920.0f && mouseY >= 195.0f && mouseY <= 235.0f) {
+            rollDice();
+            return true;
+        }
+        return false;
+    }
+
+    // 2. Check if one of the 4 Token buttons on the sidebar was clicked
+    const float panelX = 645.0f;
+    const float panelY = 50.0f;
+    for (int t = 0; t < TOKENS_PER_PLAYER; t++) {
+        float btnY = panelY + 285.0f + t * 35.0f;
+        if (mouseX >= panelX + 15.0f && mouseX <= panelX + 285.0f &&
+            mouseY >= btnY && mouseY <= btnY + 30.0f) {
+            return selectTokenById(t);
+        }
+    }
+
+    // 3. Check if an Undo button was clicked
+    if (!moveHistory.empty() && mouseX >= panelX + 15.0f && mouseX <= panelX + 285.0f &&
+        mouseY >= panelY + 430.0f && mouseY <= panelY + 455.0f) {
+        return undoLastMove();
+    }
+
+    // 4. Check if a token on the board was clicked directly
+    for (int t = 0; t < TOKENS_PER_PLAYER; t++) {
+        Vector2f pos = getTokenPixelPosition(currentPlayerIndex, t);
+        float dx = mouseX - pos.x;
+        float dy = mouseY - pos.y;
+        float dist = sqrt(dx * dx + dy * dy);
+        if (dist <= TOKEN_RADIUS + 8.0f) {
+            return selectTokenById(t);
+        }
+    }
+
+    return false;
 }
