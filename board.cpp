@@ -155,4 +155,185 @@ Vector2f getHomePosition(int playerIndex, int tokenId) {
             baseX = BOARD_X + 9 * CELL_SIZE;
             baseY = BOARD_Y;
             break;
-void drawBoard(RenderWindow &window) {}
+        case 2: // Yellow: bottom-right (9..14, 9..14)
+            baseX = BOARD_X + 9 * CELL_SIZE;
+            baseY = BOARD_Y + 9 * CELL_SIZE;
+            break;
+        case 3: // Blue: bottom-left (0..5, 9..14)
+            baseX = BOARD_X;
+            baseY = BOARD_Y + 9 * CELL_SIZE;
+            break;
+    }
+
+    // Inside the 6x6 base, the white box is at offset (40, 40) with size (160, 160)
+    // 4 token slots are placed at (80, 80), (160, 80), (80, 160), (160, 160)
+    float col = (tokenId % 2 == 0) ? 75.0f : 165.0f;
+    float row = (tokenId < 2)      ? 75.0f : 165.0f;
+    return Vector2f(baseX + col, baseY + row);
+}
+
+// Returns the finish spot inside the central triangle for each player
+Vector2f getFinishPosition(int playerIndex, int tokenId) {
+    float cx = BOARD_X + 7.5f * CELL_SIZE;
+    float cy = BOARD_Y + 7.5f * CELL_SIZE;
+    float shift = (tokenId - 1.5f) * 8.0f;
+
+    switch (playerIndex) {
+        case 0: return Vector2f(cx - 35.0f, cy + shift); // Red (left triangle)
+        case 1: return Vector2f(cx + shift, cy - 35.0f); // Green (top triangle)
+        case 2: return Vector2f(cx + 35.0f, cy + shift); // Yellow (right triangle)
+        case 3: return Vector2f(cx + shift, cy + 35.0f); // Blue (bottom triangle)
+        default: return Vector2f(cx, cy);
+    }
+}
+
+// Calculates the exact pixel position of any token based on its `step`
+Vector2f getTokenPixelPosition(int playerIndex, int tokenId) {
+    const Token &tok = players[playerIndex].tokens[tokenId];
+
+    // Case 1: In Home Base
+    if (tok.step == 0) {
+        return getHomePosition(playerIndex, tokenId);
+    }
+    // Case 2: On Main 52-cell track
+    if (tok.step >= 1 && tok.step <= 51) {
+        int startCell = playerIndex * 13;
+        int cellIndex = (startCell + (tok.step - 1)) % TOTAL_PATH_CELLS;
+        return getGridPixel(boardPathX[cellIndex], boardPathY[cellIndex]);
+    }
+    // Case 3: In Home Corridor (52 to 56)
+    if (tok.step >= 52 && tok.step <= 56) {
+        int corridorIndex = tok.step - 52;
+        return getGridPixel(corridorX[playerIndex][corridorIndex], corridorY[playerIndex][corridorIndex]);
+    }
+    // Case 4: Reached Finish (57)
+    return getFinishPosition(playerIndex, tokenId);
+}
+
+// Draws the complete 15x15 Ludo board
+void drawBoard(RenderWindow &window) {
+    // 1. Overall Window Background
+    RectangleShape windowBg(Vector2f(WINDOW_WIDTH, WINDOW_HEIGHT));
+    windowBg.setFillColor(Color(245, 247, 250));
+    window.draw(windowBg);
+
+    // 2. Board Background Card with shadow effect
+    RectangleShape boardShadow(Vector2f(BOARD_SIZE + 8, BOARD_SIZE + 8));
+    boardShadow.setPosition(Vector2f(BOARD_X - 4, BOARD_Y - 4));
+    boardShadow.setFillColor(Color(200, 205, 215));
+    window.draw(boardShadow);
+
+    RectangleShape boardBg(Vector2f(BOARD_SIZE, BOARD_SIZE));
+    boardBg.setPosition(Vector2f(BOARD_X, BOARD_Y));
+    boardBg.setFillColor(Color::White);
+    boardBg.setOutlineColor(Color(30, 30, 30));
+    boardBg.setOutlineThickness(2.0f);
+    window.draw(boardBg);
+
+    // 3. Draw the 4 Corner Home Bases (6x6 cells each = 240x240 px)
+    struct BaseConfig {
+        int gx, gy;
+        Color color;
+    } bases[4] = {
+        {0, 0, players[0].color},  // Red: top-left
+        {9, 0, players[1].color},  // Green: top-right
+        {9, 9, players[2].color},  // Yellow: bottom-right
+        {0, 9, players[3].color}   // Blue: bottom-left
+    };
+
+    for (int p = 0; p < 4; p++) {
+        float bx = BOARD_X + bases[p].gx * CELL_SIZE;
+        float by = BOARD_Y + bases[p].gy * CELL_SIZE;
+        float baseDim = 6 * CELL_SIZE;
+
+        // Colored Base Box
+        RectangleShape outerBox(Vector2f(baseDim, baseDim));
+        outerBox.setPosition(Vector2f(bx, by));
+        outerBox.setFillColor(bases[p].color);
+        outerBox.setOutlineColor(Color(30, 30, 30));
+        outerBox.setOutlineThickness(1.5f);
+        window.draw(outerBox);
+
+        // Inner White Box
+        RectangleShape innerWhite(Vector2f(baseDim - 80, baseDim - 80));
+        innerWhite.setPosition(Vector2f(bx + 40, by + 40));
+        innerWhite.setFillColor(Color::White);
+        innerWhite.setOutlineColor(Color(30, 30, 30));
+        innerWhite.setOutlineThickness(1.5f);
+        window.draw(innerWhite);
+
+        // 4 Token circles inside home
+        for (int t = 0; t < TOKENS_PER_PLAYER; t++) {
+            Vector2f slotPos = getHomePosition(p, t);
+            CircleShape slot(TOKEN_RADIUS + 5);
+            slot.setOrigin(Vector2f(TOKEN_RADIUS + 5, TOKEN_RADIUS + 5));
+            slot.setPosition(slotPos);
+            slot.setFillColor(bases[p].color);
+            slot.setOutlineColor(Color(30, 30, 30));
+            slot.setOutlineThickness(1.5f);
+            window.draw(slot);
+
+            CircleShape innerSlot(TOKEN_RADIUS - 1);
+            innerSlot.setOrigin(Vector2f(TOKEN_RADIUS - 1, TOKEN_RADIUS - 1));
+            innerSlot.setPosition(slotPos);
+            innerSlot.setFillColor(Color::White);
+            window.draw(innerSlot);
+        }
+    }
+
+    // 4. Draw Path Cells (52 main loop cells)
+    for (int i = 0; i < TOTAL_PATH_CELLS; i++) {
+        RectangleShape cell(Vector2f(CELL_SIZE, CELL_SIZE));
+        cell.setPosition(Vector2f(BOARD_X + boardPathX[i] * CELL_SIZE, BOARD_Y + boardPathY[i] * CELL_SIZE));
+        cell.setOutlineColor(Color(80, 80, 80));
+        cell.setOutlineThickness(1.0f);
+
+        // Color specific cells
+        if (i == 0) {
+            cell.setFillColor(players[0].color); // Red Start
+        } else if (i == 13) {
+            cell.setFillColor(players[1].color); // Green Start
+        } else if (i == 26) {
+            cell.setFillColor(players[2].color); // Yellow Start
+        } else if (i == 39) {
+            cell.setFillColor(players[3].color); // Blue Start
+        } else if (safeCells[i]) {
+            cell.setFillColor(Color(230, 235, 245)); // Safe Star Cell
+        } else {
+            cell.setFillColor(Color::White);
+        }
+        window.draw(cell);
+
+        // Draw Star on Safe cells
+        if (safeCells[i] && i != 0 && i != 13 && i != 26 && i != 39) {
+            Text star(gameFont, "*", 26);
+            star.setStyle(Text::Bold);
+            star.setFillColor(Color(50, 50, 50));
+            star.setOrigin(Vector2f(6.0f, 12.0f));
+            Vector2f cp = getGridPixel(boardPathX[i], boardPathY[i]);
+            star.setPosition(Vector2f(cp.x, cp.y + 4.0f));
+            window.draw(star);
+        }
+        // Draw Start indicator on Start cells
+        if (i == 0 || i == 13 || i == 26 || i == 39) {
+            Text startIcon(gameFont, "S", 18);
+            startIcon.setStyle(Text::Bold);
+            startIcon.setFillColor(Color::White);
+            startIcon.setOrigin(Vector2f(6.0f, 12.0f));
+            Vector2f cp = getGridPixel(boardPathX[i], boardPathY[i]);
+            startIcon.setPosition(Vector2f(cp.x, cp.y - 1.0f));
+            window.draw(startIcon);
+        }
+    }
+
+    // 5. Draw the 4 Colored Home Corridors (5 cells each)
+    for (int p = 0; p < 4; p++) {
+        for (int c = 0; c < HOME_CORRIDOR_CELLS; c++) {
+            RectangleShape cell(Vector2f(CELL_SIZE, CELL_SIZE));
+            cell.setPosition(Vector2f(BOARD_X + corridorX[p][c] * CELL_SIZE,
+                                      BOARD_Y + corridorY[p][c] * CELL_SIZE));
+            cell.setFillColor(players[p].color);
+            cell.setOutlineColor(Color(80, 80, 80));
+            cell.setOutlineThickness(1.0f);
+            window.draw(cell);
+}
