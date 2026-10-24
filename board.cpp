@@ -1,14 +1,32 @@
 /*
  * LUDO GAME - BOARD IMPLEMENTATION (board.cpp)
- * -------------------------------------------
- * This file handles the 15x15 grid layout, coordinates, and all drawing operations.
+ * ============================================
+ * This file handles the 15x15 grid layout, coordinate tables, and all drawing code.
  * 
- * DESIGN FOR EASY EXPLANATION:
- * 1. The board is divided into a 15x15 grid of square cells (CELL_SIZE = 40 pixels).
- * 2. Corners are 6x6 blocks: Red (top-left), Green (top-right), Yellow (bottom-right), Blue (bottom-left).
- * 3. The arms are 6x3 blocks of cells.
- * 4. The center is a 3x3 block containing 4 colored triangles meeting in the middle.
- * 5. Everything is drawn using simple SFML shapes (RectangleShape, CircleShape, ConvexShape, Text).
+ * HOW THE BOARD IS BUILT (SIMPLE EXPLANATION FOR MAM):
+ * 1. 15x15 GRID: The whole board is a grid of 15 x 15 squares (each 40x40 pixels).
+ * 2. FOUR BASES (6x6 cells each):
+ *    - Red: top-left (0..5, 0..5)
+ *    - Green: top-right (9..14, 0..5)
+ *    - Yellow: bottom-right (9..14, 9..14)
+ *    - Blue: bottom-left (0..5, 9..14)
+ * 3. FOUR ARMS (6x3 cells each):
+ *    - Contains the 52 white walking path cells.
+ *    - Includes 4 Start cells ('S') and 4 Star safe cells ('*').
+ *    - Contains the 4 colored corridors (5 cells each).
+ * 4. CENTER FINISH (3x3 cells in middle):
+ *    - 4 colored triangles meeting at the golden center circle.
+ * 
+ * CORE DATA STRUCTURES MANAGED IN THIS FILE:
+ * 1. 1D ARRAYS:
+ *    - `boardPathX[52]` & `boardPathY[52]`: Stores (X,Y) grid coordinates for the 52-cell track.
+ *    - `safeCells[52]`: Boolean array marking which cells are safe from capture.
+ * 2. 2D ARRAYS (Matrices):
+ *    - `corridorX[4][5]` & `corridorY[4][5]`: Stores coordinates for 5 corridor cells for 4 players.
+ * 3. RENDERING THE DATA STRUCTURES ON SCREEN (in drawUI):
+ *    - QUEUE: Displays `diceHistory` as a sequence of recent dice numbers.
+ *    - STACK: Displays `moveHistory.size()` on the Undo button.
+ *    - LINKED LIST: Displays the last 4 event messages from `actionLog`.
  */
 
 #include "ludo.h"

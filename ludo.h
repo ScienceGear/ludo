@@ -1,25 +1,27 @@
 /*
  * LUDO GAME - HEADER FILE (ludo.h)
- * ---------------------------------
- * This file contains all constants, data structures, and function declarations.
+ * ================================
+ * This file contains ALL the shared things: constants, data structures (structs),
+ * global variables, and function declarations.
  * 
- * DATA STRUCTURES USED IN THIS PROJECT (FOR VIVA / MAM):
- * 1. QUEUE (FIFO)       : `std::queue<int> diceHistory`
- *    - Stores recent dice rolls. New rolls are pushed to the back;
- *      when size > 5, the oldest roll is popped from the front.
- * 2. STACK (LIFO)       : `std::stack<MoveRecord> moveHistory`
- *    - Implements the "UNDO" feature (Press 'U').
- *    - Every move pushes a `MoveRecord` onto the stack.
- *    - Pressing 'U' pops the top record and restores previous positions!
- * 3. LINKED LIST        : `std::list<string> actionLog`
- *    - Stores the live history log of game events (captures, moves, exits).
- * 4. 1D & 2D ARRAYS     :
- *    - `boardPathX[52]`, `boardPathY[52]` for O(1) path coordinate lookup.
- *    - `corridorX[4][5]`, `corridorY[4][5]` for player home corridors.
- *    - `safeCells[52]` boolean array for O(1) safe-cell lookup.
- * 5. STRUCTS            :
- *    - `struct Token`: id, step (0..57), status (0..2).
- *    - `struct Player`: name, color, tokens[4], tokensFinished.
+ * Think of this as the "menu" that tells other files what's available.
+ * 
+ * CORE DATA STRUCTURES USED (FOR VIVA/MAM):
+ * 1. QUEUE (FIFO)  -> std::queue<int> diceHistory
+ *    Stores last 5 dice rolls. New roll added at back, oldest removed from front.
+ * 
+ * 2. STACK (LIFO)  -> std::stack<MoveRecord> moveHistory
+ *    Stores every move for UNDO feature. Last move pushed on top, popped to undo.
+ * 
+ * 3. LINKED LIST   -> std::list<string> actionLog
+ *    Stores game event messages. New events added at back, old ones removed from front.
+ * 
+ * 4. ARRAYS        -> 1D arrays (boardPathX[52], boardPathY[52], safeCells[52])
+ *                    2D arrays (corridorX[4][5], corridorY[4][5])
+ *    Store board coordinates for fast O(1) lookup.
+ * 
+ * 5. STRUCTS       -> Token, Player, MoveRecord
+ *    Group related data together.
  */
 
 #ifndef LUDO_H
@@ -28,10 +30,9 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
 #include <string>
-#include <vector>
-#include <queue>
-#include <stack>
-#include <list>
+#include <queue>    // For QUEUE (FIFO) - dice history
+#include <stack>    // For STACK (LIFO) - move history for UNDO
+#include <list>     // For LINKED LIST - game event log
 #include <ctime>
 #include <cstdlib>
 #include <cmath>
@@ -40,120 +41,140 @@ using namespace std;
 using namespace sf;
 
 // ========================== CONSTANTS ==========================
+// These are fixed values that never change during the game
 
 const int MAX_PLAYERS = 4;           // 4 players: Red, Green, Yellow, Blue
-const int TOKENS_PER_PLAYER = 4;     // 4 tokens per player
-const int TOTAL_PATH_CELLS = 52;     // 52 cells in the main circular loop
-const int HOME_CORRIDOR_CELLS = 5;   // 5 colored cells in each player's private corridor
-const int FINISH_STEP = 57;          // Reaching step 57 means token reached the finish!
+const int TOKENS_PER_PLAYER = 4;     // Each player has 4 tokens
+const int TOTAL_PATH_CELLS = 52;     // 52 cells in the main circular track
+const int HOME_CORRIDOR_CELLS = 5;   // 5 cells in each player's private corridor
+const int FINISH_STEP = 57;          // Step 57 = token reached center finish!
 
-// Window and Board dimensions
+// Window and Board sizes
 const float WINDOW_WIDTH = 960.0f;
 const float WINDOW_HEIGHT = 700.0f;
-const float BOARD_SIZE = 600.0f;
-const float CELL_SIZE = 40.0f;       // 15 grid cells * 40 px = 600 px
-const float BOARD_X = 20.0f;         // Board position X
-const float BOARD_Y = 50.0f;         // Board position Y
-const float TOKEN_RADIUS = 13.0f;    // Radius of token circle
+const float BOARD_SIZE = 600.0f;     // 15 cells * 40 pixels = 600
+const float CELL_SIZE = 40.0f;       // Each grid cell is 40x40 pixels
+const float BOARD_X = 20.0f;         // Board starts at x=20
+const float BOARD_Y = 50.0f;         // Board starts at y=50
+const float TOKEN_RADIUS = 13.0f;    // Token circle radius
 
-// ========================== DATA STRUCTURES ==========================
+
+// ========================== DATA STRUCTURES (STRUCTS) ==========================
 
 /*
- * Token structure:
- * Holds the state of one token.
+ * Token struct - represents ONE token on the board
+ * 
+ * step: 0 = in home base, 1-51 = on main track, 52-56 = in corridor, 57 = finished
+ * status: 0 = HOME, 1 = ACTIVE (on board), 2 = FINISHED
  */
 struct Token {
-    int id;         // Token ID (0, 1, 2, 3)
-    int step;       // Progress: 0 = base, 1-51 = main track, 52-56 = corridor, 57 = finished
-    int status;     // 0 = HOME (base), 1 = ACTIVE (on board), 2 = FINISHED
+    int id;         // Token ID: 0, 1, 2, 3
+    int step;       // Current progress (0 to 57)
+    int status;     // 0=HOME, 1=ACTIVE, 2=FINISHED
 };
 
 /*
- * Player structure:
- * Holds information for one player.
+ * Player struct - represents ONE player
+ * Contains 4 tokens and tracks how many finished
  */
 struct Player {
-    string name;                     // Display name (e.g. "Player 1 (Red)")
-    Color color;                     // Primary theme color
-    Token tokens[TOKENS_PER_PLAYER]; // 4 tokens
-    int tokensFinished;              // Count of tokens that reached finish (0-4)
+    string name;                     // e.g., "Player 1 (Red)"
+    Color color;                     // Player's color
+    Token tokens[TOKENS_PER_PLAYER]; // Array of 4 tokens
+    int tokensFinished;              // How many tokens reached finish (0 to 4)
 };
 
 /*
- * STACK ELEMENT: MoveRecord
- * Used by std::stack<MoveRecord> to implement the UNDO operation (LIFO).
+ * MoveRecord struct - stores ONE move for the UNDO feature (STACK)
+ * 
+ * Every time a player moves a token, we save ALL the info needed to undo it.
+ * This is pushed onto the stack (LIFO - Last In First Out).
  */
 struct MoveRecord {
-    int playerIndex;
-    int tokenId;
-    int prevStep;
-    int prevStatus;
-    int diceValue;
-    bool wasRolling;
-    bool captured;
-    int capturedPlayer;
-    int capturedTokenId;
-    int capturedPrevStep;
+    int playerIndex;       // Which player moved (0 to 3)
+    int tokenId;           // Which token (0 to 3)
+    int prevStep;          // Token's step BEFORE the move
+    int prevStatus;        // Token's status BEFORE the move
+    int diceValue;         // What dice was rolled
+    bool wasRolling;       // Was it rolling phase before?
+    bool captured;         // Did this move capture someone?
+    int capturedPlayer;    // If captured, which player?
+    int capturedTokenId;   // If captured, which token?
+    int capturedPrevStep;  // Captured token's step before capture
 };
 
-// ========================== GLOBAL STATE & DATA STRUCTURES ==========================
+
+// ========================== GLOBAL VARIABLES ==========================
+// These are defined in game.cpp but declared here so all files can use them
+// 'extern' means "this variable exists somewhere else, don't create a new one"
 
 extern Font gameFont;
 
 // Game state variables
-extern int currentPlayerIndex;       // Whose turn it is (0, 1, 2, 3)
-extern int numPlayers;               // Number of players (default 4)
-extern bool isRolling;               // true = waiting for dice roll; false = waiting to choose token
-extern bool gameOver;                // true when a player brings all 4 tokens home
-extern int winnerIndex;              // Index of the winning player
-extern int currentDiceValue;         // Current dice number (1-6)
-extern bool canRollAgain;            // true if 6 rolled, capture made, or reached finish
-extern string statusMessage;         // Message shown on the sidebar for instructions
+extern int currentPlayerIndex;   // Whose turn: 0=Red, 1=Green, 2=Yellow, 3=Blue
+extern int numPlayers;           // Number of players (usually 4)
+extern bool isRolling;           // true = waiting for dice roll, false = choose token
+extern bool gameOver;            // true when someone wins
+extern int winnerIndex;          // Who won (0 to 3)
+extern int currentDiceValue;     // Current dice value (1 to 6)
+extern bool canRollAgain;        // true if player gets extra roll (6, capture, finish)
+extern string statusMessage;     // Text shown on sidebar
 
-extern Player players[MAX_PLAYERS];
+extern Player players[MAX_PLAYERS];  // Array of 4 players
 
-// 1. QUEUE: Tracks last 5 dice rolls (FIFO)
+// ========================== CORE DATA STRUCTURES ==========================
+// THESE ARE THE 3 MAIN DATA STRUCTURES FOR YOUR VIVA!
+
+// 1. QUEUE (FIFO) - First In First Out
+// Stores last 5 dice rolls. New rolls go to BACK, old rolls removed from FRONT.
 extern queue<int> diceHistory;
 
-// 2. STACK: Tracks move history for Undo feature (LIFO)
+// 2. STACK (LIFO) - Last In First Out
+// Stores move history for UNDO. New moves pushed on TOP, popped from TOP to undo.
 extern stack<MoveRecord> moveHistory;
 
-// 3. LINKED LIST: Stores recent game event log
+// 3. LINKED LIST - Dynamic list, efficient add/remove at both ends
+// Stores recent game event messages (max 4 shown on screen)
 extern list<string> actionLog;
 
-// 4. ARRAYS: Board grid coordinates
-extern int boardPathX[TOTAL_PATH_CELLS];
-extern int boardPathY[TOTAL_PATH_CELLS];
-extern int corridorX[MAX_PLAYERS][HOME_CORRIDOR_CELLS];
-extern int corridorY[MAX_PLAYERS][HOME_CORRIDOR_CELLS];
-extern bool safeCells[TOTAL_PATH_CELLS];
+
+// ========================== BOARD COORDINATE ARRAYS ==========================
+// These store the (x,y) grid positions for fast lookup
+
+extern int boardPathX[TOTAL_PATH_CELLS];           // X grid position for each of 52 path cells
+extern int boardPathY[TOTAL_PATH_CELLS];           // Y grid position for each of 52 path cells
+extern int corridorX[MAX_PLAYERS][HOME_CORRIDOR_CELLS]; // X grid for each player's 5 corridor cells
+extern int corridorY[MAX_PLAYERS][HOME_CORRIDOR_CELLS]; // Y grid for each player's 5 corridor cells
+extern bool safeCells[TOTAL_PATH_CELLS];           // true if cell is safe (star or start)
+
 
 // ========================== FUNCTION DECLARATIONS ==========================
+// These functions are defined in board.cpp or game.cpp
 
-// board.cpp: Layout and Drawing
-void initializeBoard();
-Vector2f getGridPixel(int gx, int gy);
-Vector2f getHomePosition(int playerIndex, int tokenId);
-Vector2f getTokenPixelPosition(int playerIndex, int tokenId);
-void drawBoard(RenderWindow &window);
-void drawTokens(RenderWindow &window);
-void drawDice(RenderWindow &window);
-void drawUI(RenderWindow &window);
-void drawStartScreen(RenderWindow &window);
-void drawWinScreen(RenderWindow &window);
+// board.cpp - Board setup and drawing functions
+void initializeBoard();                              // Sets up all board coordinates
+Vector2f getGridPixel(int gx, int gy);               // Convert grid (0-14) to pixel position
+Vector2f getHomePosition(int playerIndex, int tokenId); // Get token position in home base
+Vector2f getTokenPixelPosition(int playerIndex, int tokenId); // Get token position by step
+void drawBoard(RenderWindow &window);                // Draw entire board
+void drawTokens(RenderWindow &window);               // Draw all tokens
+void drawDice(RenderWindow &window);                 // Draw dice with dots
+void drawUI(RenderWindow &window);                   // Draw sidebar UI (shows data structures!)
+void drawStartScreen(RenderWindow &window);          // Draw welcome screen
+void drawWinScreen(RenderWindow &window);            // Draw victory screen
 
-// game.cpp: Rules and Logic
-void initializeGame(int playerCount = 4);
-int rollDice();
-bool canMoveToken(int playerIndex, int tokenId);
-bool hasAnyValidMove(int playerIndex);
-bool moveToken(int playerIndex, int tokenId);
-bool undoLastMove();
-void addActionLog(const string &msg);
-void nextTurn();
-bool checkWin();
-bool selectTokenById(int tokenId);
-bool selectTokenAtPosition(float mouseX, float mouseY);
-int getPlayerStartCell(int playerIndex);
+// game.cpp - Game logic and rules
+void initializeGame(int playerCount = 4);            // Reset and start new game
+int rollDice();                                      // Roll dice, update QUEUE
+bool canMoveToken(int playerIndex, int tokenId);     // Check if token can move
+bool hasAnyValidMove(int playerIndex);               // Check if player has any valid move
+bool moveToken(int playerIndex, int tokenId);        // Move token, update STACK
+bool undoLastMove();                                 // UNDO: pop from STACK, restore state
+void addActionLog(const string &msg);                // Add message to LINKED LIST
+void nextTurn();                                     // Switch to next player
+bool checkWin();                                     // Check if someone won
+bool selectTokenById(int tokenId);                   // Select token by number (1-4)
+bool selectTokenAtPosition(float mouseX, float mouseY); // Handle mouse clicks
+int getPlayerStartCell(int playerIndex);             // Get start cell index for player
 
 #endif // LUDO_H
