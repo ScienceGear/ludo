@@ -36,10 +36,10 @@ string statusMessage = "Press SPACE or Click Dice to Roll!";
 
 Player players[MAX_PLAYERS];   // Array of 4 players
 
-// THE 3 CORE DATA STRUCTURES
-queue<int> diceHistory;                    // QUEUE: Last 5 dice rolls (FIFO)
-stack<MoveRecord> moveHistory;             // STACK: Move history for UNDO (LIFO)
-list<string> actionLog;                    // LINKED LIST: Game event log
+// THE 3 CUSTOM DATA STRUCTURES (BUILT FROM SCRATCH - NO STL!)
+CustomQueue diceHistory;                   // CUSTOM QUEUE: Last 5 dice rolls (FIFO)
+CustomStack moveHistory;                   // CUSTOM STACK: Move history for UNDO (LIFO)
+CustomLinkedList actionLog;                // CUSTOM LINKED LIST: Game event log
 
 
 // ========================== HELPER FUNCTIONS ==========================

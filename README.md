@@ -95,13 +95,15 @@ To keep the project easy to understand, each token tracks its progress using a s
 
 ---
 
-## 7. Data Structures Used (Detailed Explanation for Mam)
+## 7. Custom Data Structures (Built From Scratch - NO STL!)
+
+Instead of using ready-made library containers (`std::queue`, `std::stack`, `std::list`), **we built our own custom data structures from scratch using pointers and dynamic nodes (`new` and `delete`)**:
 
 | Data Structure | Implementation | Where Used | Why Chosen |
 |---|---|---|---|
-| **QUEUE (FIFO)** | `std::queue<int> diceHistory` | `rollDice()`, displayed on UI | **First-In, First-Out (FIFO):** Stores the last 5 dice rolls. Each new roll is pushed to the back (`push`), and the oldest roll is popped from the front (`pop`) when size > 5. Displayed on the right sidebar as a rolling history. |
-| **STACK (LIFO)** | `std::stack<MoveRecord> moveHistory` | `moveToken()`, `undoLastMove()` | **Last-In, First-Out (LIFO):** Powers the **Undo feature (Press 'U')**! Every move is pushed onto the stack. Pressing 'U' pops the most recent move from the top (`pop`) and restores the previous token position and turn. |
-| **LINKED LIST** | `std::list<string> actionLog` | `addActionLog()`, displayed on UI | **Doubly Linked List:** Efficiently appends event log messages (`push_back`) and removes old logs from the head (`pop_front`) in O(1) time without reallocating contiguous memory. |
+| **CUSTOM QUEUE (FIFO)** | `class CustomQueue` with `QueueNode` (`frontNode`, `rearNode`) | `rollDice()`, displayed on UI | **First-In, First-Out (FIFO):** Stores the last 5 dice rolls. New rolls are enqueued at the rear (`push`), and the oldest roll is dequeued from the front (`pop`) when size > 5. Displayed on the right sidebar. |
+| **CUSTOM STACK (LIFO)** | `class CustomStack` with `StackNode` (`topNode`) | `moveToken()`, `undoLastMove()` | **Last-In, First-Out (LIFO):** Powers the **Undo feature (Press 'U')**! Every move is pushed onto the top of the stack (`push`). Pressing 'U' pops the most recent move from the top (`pop`) and restores the previous token position and turn. |
+| **CUSTOM LINKED LIST** | `class CustomLinkedList` with `ListNode` (`head`, `tail`) | `addActionLog()`, displayed on UI | **Singly Linked List:** Efficiently appends event log messages at the tail (`push_back`) and removes old logs from the head (`pop_front`) in $O(1)$ time without reallocating arrays. |
 | **1D ARRAYS** | `boardPathX[52], boardPathY[52]` | Board path lookup | Fixed-size array storing grid coordinates for the 52 main path cells. Provides instant **O(1)** indexing. |
 | **2D ARRAYS (Matrices)** | `corridorX[4][5], corridorY[4][5]` | Home corridor lookup | 2D matrix storing the 5 colored corridor cells for each of the 4 players. |
 | **BOOLEAN ARRAY** | `safeCells[52]` | Capture checks | Fast **O(1)** lookup to check if a landing cell is a protected safe star or start cell. |
@@ -111,26 +113,26 @@ To keep the project easy to understand, each token tracks its progress using a s
 
 ## 8. Presentation / Viva Questions & Answers (Cheat Sheet for Mam!)
 
-**Q1: What data structures did you use in this project?**  
-> *"Mam, we used three core data structures from the C++ standard library:  
-> 1. **Queue (`std::queue`)** for the rolling dice history (FIFO).  
-> 2. **Stack (`std::stack`)** for the move history to implement the Undo feature (LIFO).  
-> 3. **Linked List (`std::list`)** for the live game event log.  
-> In addition, we used 1D and 2D arrays for board cell lookups and custom C++ structs for Tokens and Players."*
+**Q1: What data structures did you use in this project? Did you use ready-made STL?**  
+> *"No, Mam! We wrote our own custom data structures from scratch using C++ classes and linked nodes:  
+> 1. **Custom Queue (`CustomQueue`)** for the rolling dice history (FIFO).  
+> 2. **Custom Stack (`CustomStack`)** for the move history to implement Undo (LIFO).  
+> 3. **Custom Linked List (`CustomLinkedList`)** for the live game event log.  
+> 4. **1D & 2D Arrays** for the 52-cell track coordinates and home corridors."*
 
-**Q2: How does the Stack work in your game?**  
-> *"Mam, the Stack works on Last-In, First-Out (LIFO). Whenever a player moves a token, we push a `MoveRecord` containing the previous step and status onto the stack. If the player presses 'U', we pop the top of the stack and restore the previous state, undoing the move."*
+**Q2: How does your Custom Stack work for the Undo feature?**  
+> *"Mam, our Custom Stack works on Last-In, First-Out (LIFO). Whenever a player moves a token, we push a `MoveRecord` containing the previous step and status onto our linked stack. If the player presses 'U', we pop the top node from the stack, free the memory, and restore the previous state, undoing the move."*
 
-**Q3: How does the Queue work in your game?**  
-> *"Mam, the Queue works on First-In, First-Out (FIFO). Whenever the dice is rolled, we push the new roll to the back. When the queue size exceeds 5, we pop the oldest roll from the front. This maintains a rolling display of recent rolls on the sidebar."*
+**Q3: How does your Custom Queue work for the dice history?**  
+> *"Mam, our Custom Queue works on First-In, First-Out (FIFO) using `frontNode` and `rearNode` pointers. Whenever the dice is rolled, we push the new roll to the rear. When the queue size exceeds 5, we pop the oldest roll from the front. This maintains a rolling display of recent rolls on the sidebar."*
 
 **Q4: How do you represent the Ludo board on the screen?**  
 > *"Mam, we divided the board into a 15 by 15 mathematical grid of 40-pixel squares. The 4 corners are 6x6 squares for player bases, the 4 arms are 6x3 rectangles for the tracks, and the center is 3x3 with 4 triangles meeting at the finish."*
 
-**Q2: How do tokens move around the board?**  
+**Q5: How do tokens move around the board?**  
 > *"Each token has a `step` variable from 0 to 57. Step 0 is the base. Rolling a 6 moves it to step 1. Steps 1 to 51 move along the main circular path. Steps 52 to 56 move up the player's colored corridor, and step 57 is the center finish."*
 
-**Q3: How does capture detection work?**  
+**Q6: How does capture detection work?**  
 > *"When a token moves, we calculate which board cell it lands on using `(startCell + step - 1) % 52`. If that cell is not marked safe in our `safeCells` array, we check if any opponent token is on that exact cell. If so, the opponent's `step` and `status` are reset to 0 (sent back to base), and the player earns a bonus roll."*
 
 **Q4: How do you prevent tokens from overshooting the finish?**  

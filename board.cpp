@@ -592,18 +592,16 @@ void drawUI(RenderWindow &window) {
     }
 
     // 3. DATA STRUCTURE #1: QUEUE (FIFO) Display
-    // Shows recent dice rolls stored in std::queue<int> diceHistory
-    Text queueLabel(gameFont, "Dice History (Queue - FIFO):", 11);
+    // Shows recent dice rolls stored in CustomQueue diceHistory
+    Text queueLabel(gameFont, "Dice History (Custom Queue - FIFO):", 11);
     queueLabel.setStyle(Text::Bold);
     queueLabel.setFillColor(Color(80, 90, 105));
     queueLabel.setPosition(Vector2f(panelX + 15, panelY + 150));
     window.draw(queueLabel);
 
-    queue<int> tempQ = diceHistory;
-    int qIndex = 0;
-    while (!tempQ.empty()) {
-        int val = tempQ.front();
-        tempQ.pop();
+    vector<int> qVals = diceHistory.toVector();
+    for (size_t qIndex = 0; qIndex < qVals.size(); qIndex++) {
+        int val = qVals[qIndex];
 
         RectangleShape qBox(Vector2f(22.0f, 20.0f));
         qBox.setPosition(Vector2f(panelX + 15 + qIndex * 28.0f, panelY + 168));
@@ -618,13 +616,12 @@ void drawUI(RenderWindow &window) {
         qText.setPosition(Vector2f(panelX + 21 + qIndex * 28.0f, panelY + 171));
         window.draw(qText);
 
-        if (!tempQ.empty()) {
+        if (qIndex + 1 < qVals.size()) {
             Text arrow(gameFont, ">", 11);
             arrow.setFillColor(Color(150, 160, 175));
             arrow.setPosition(Vector2f(panelX + 39 + qIndex * 28.0f, panelY + 171));
             window.draw(arrow);
         }
-        qIndex++;
     }
 
     // 4. Status / Instruction Message
@@ -699,16 +696,17 @@ void drawUI(RenderWindow &window) {
     undoText.setPosition(Vector2f(panelX + 25, undoY + 6));
     window.draw(undoText);
 
-    // 7. DATA STRUCTURE #3: LINKED LIST (std::list) - RECENT EVENT LOG
+    // 7. DATA STRUCTURE #3: CUSTOM LINKED LIST - RECENT EVENT LOG
     float logY = panelY + 402.0f;
-    Text logTitle(gameFont, "Game Events (Linked List):", 11);
+    Text logTitle(gameFont, "Game Events (Custom Linked List):", 11);
     logTitle.setStyle(Text::Bold);
     logTitle.setFillColor(Color(80, 90, 105));
     logTitle.setPosition(Vector2f(panelX + 15, logY));
     window.draw(logTitle);
 
+    vector<string> logs = actionLog.toVector();
     int logIndex = 0;
-    for (const string &msg : actionLog) {
+    for (const string &msg : logs) {
         Text logText(gameFont, "* " + msg, 10);
         logText.setFillColor(Color(70, 75, 85));
         logText.setPosition(Vector2f(panelX + 18, logY + 16.0f + logIndex * 15.0f));

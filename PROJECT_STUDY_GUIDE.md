@@ -126,45 +126,84 @@ Every player's start is spaced **exactly 13 cells apart**, making the loop mathe
 
 ---
 
-## 5. The 4 Data Structures Used (Crucial for Viva!)
+## 5. The Custom Data Structures Used (Built From Scratch - NO STL!)
 
-Teachers love when you can clearly identify each data structure and explain **why** it was chosen:
+Instead of relying on ready-made C++ Standard Template Library (`std::queue`, `std::stack`, `std::list`), **we built our own custom data structures completely from scratch using pointers and dynamic memory (`new` / `delete`)**! This demonstrates deep knowledge of data structure fundamentals for your professor:
 
-### 1. QUEUE (`std::queue<int> diceHistory`) — FIFO (First-In, First-Out)
-* **What it does:** Stores a rolling history of the last 5 dice rolls.
-* **Why Queue?** Just like people standing in a ticket line, the first dice roll that enters is the first one to be removed when the line is full.
-* **Code in `game.cpp`:**
+---
+
+### 1. CUSTOM QUEUE (`class CustomQueue`) — FIFO (First-In, First-Out)
+* **What it does:** Stores a rolling history of the last 5 dice rolls on the UI.
+* **Concept:** Like people standing in a ticket line, the first dice roll that enters (`push` / enqueue at rear) is the first one to leave (`pop` / dequeue from front).
+* **Implementation from scratch in `ludo.h`:**
   ```cpp
-  diceHistory.push(roll);            // Add newest roll to back
-  if (diceHistory.size() > 5) {
-      diceHistory.pop();             // Remove oldest roll from front
-  }
+  struct QueueNode {
+      int data;
+      QueueNode* next;
+      QueueNode(int val) : data(val), next(nullptr) {}
+  };
+
+  class CustomQueue {
+  private:
+      QueueNode* frontNode; // Points to first element
+      QueueNode* rearNode;  // Points to last element
+      int count;
+  public:
+      void push(int val);   // Enqueue at rear (O(1))
+      void pop();           // Dequeue from front (O(1))
+      int front() const;    // Peek at oldest element
+  };
   ```
 
-### 2. STACK (`std::stack<MoveRecord> moveHistory`) — LIFO (Last-In, First-Out)
-* **What it does:** Powers the **Undo** feature (Press `U` to undo a move).
-* **Why Stack?** The last move you made is the first move you want to undo (LIFO - like a stack of plates).
-* **Code in `game.cpp`:**
-  ```cpp
-  // 1. When moving, push the record onto the stack:
-  moveHistory.push(record);
+---
 
-  // 2. When pressing 'U', pop from top and reverse:
-  MoveRecord last = moveHistory.top();
-  moveHistory.pop();
-  players[last.playerIndex].tokens[last.tokenId].step = last.prevStep;
+### 2. CUSTOM STACK (`class CustomStack`) — LIFO (Last-In, First-Out)
+* **What it does:** Powers the live **Undo** feature (Press `U` to undo any move).
+* **Concept:** Like a stack of plates, the last move you push onto the stack (`push`) is the first one you pop off (`pop`) when you want to reverse it!
+* **Implementation from scratch in `ludo.h`:**
+  ```cpp
+  struct StackNode {
+      MoveRecord data;
+      StackNode* next;
+      StackNode(const MoveRecord& record) : data(record), next(nullptr) {}
+  };
+
+  class CustomStack {
+  private:
+      StackNode* topNode;   // Points to the top of stack
+      int count;
+  public:
+      void push(const MoveRecord& record); // Push onto top (O(1))
+      void pop();                          // Pop from top (O(1))
+      MoveRecord top() const;              // Peek at top move
+  };
   ```
 
-### 3. LINKED LIST (`std::list<string> actionLog`) — Dynamic Chain of Nodes
-* **What it does:** Displays the live game events log on the sidebar (e.g. *"Red rolled 6"*, *"Red captured Blue"*).
-* **Why Linked List?** Adding items to the tail (`push_back`) and removing old items from the head (`pop_front`) is **$O(1)$ constant time**, without resizing or shifting array memory.
-* **Code in `game.cpp`:**
+---
+
+### 3. CUSTOM LINKED LIST (`class CustomLinkedList`) — Dynamic Singly Linked List
+* **What it does:** Stores and displays the live stream of game events on the sidebar (e.g., *"Red rolled 6"*, *"Red captured Blue"*).
+* **Concept:** A sequence of nodes linked by pointers. Allows adding new events at the tail (`push_back`) and dropping old events from the head (`pop_front`) in **$O(1)$ constant time** without reallocating arrays.
+* **Implementation from scratch in `ludo.h`:**
   ```cpp
-  actionLog.push_back(msg);
-  if (actionLog.size() > 4) {
-      actionLog.pop_front();
-  }
+  struct ListNode {
+      string message;
+      ListNode* next;
+      ListNode(const string& msg) : message(msg), next(nullptr) {}
+  };
+
+  class CustomLinkedList {
+  private:
+      ListNode* head; // Head pointer
+      ListNode* tail; // Tail pointer
+      int count;
+  public:
+      void push_back(const string& msg); // Add at end (O(1))
+      void pop_front();                  // Remove oldest from front (O(1))
+  };
   ```
+
+---
 
 ### 4. 1D & 2D ARRAYS (Matrices)
 * **1D Arrays (`boardPathX[52]`, `boardPathY[52]`):** Fixed tables of grid coordinates for fast **$O(1)$** lookup.
@@ -235,10 +274,10 @@ if (!safeCells[landingCell]) {
 > - *Steps 52 to 56 lead up the player's private colored home corridor.*  
 > - *And Step 57 is the Center Finish!*  
 >  
-> *Third, we incorporated all the core Data Structures taught in our syllabus:*  
-> 1. *We used a **Queue (`std::queue`)** to maintain a FIFO sliding window of the last 5 dice rolls shown on our UI.*  
-> 2. *We used a **Stack (`std::stack`)** to implement the **Undo feature** (pressing 'U'), which operates on LIFO to pop and reverse the most recent move.*  
-> 3. *We used a **Linked List (`std::list`)** to log live game events dynamically.*  
+> *Third, instead of using ready-made library containers, **we built all our data structures from scratch using pointers and dynamic nodes**:*  
+> 1. *We built a **Custom Queue (`CustomQueue`)** using linked nodes with `frontNode` and `rearNode` to maintain a FIFO sliding window of the last 5 dice rolls.*  
+> 2. *We built a **Custom Stack (`CustomStack`)** with `topNode` to implement the **Undo feature** (pressing 'U'), which operates on LIFO to pop and reverse the most recent move.*  
+> 3. *We built a **Custom Singly Linked List (`CustomLinkedList`)** with `head` and `tail` pointers to log live game events dynamically.*  
 > 4. *We used **1D and 2D arrays** for constant-time $O(1)$ lookups of board coordinates and safe cells.*  
 >  
 > *The game supports both keyboard shortcuts and full mouse interaction, features safe cell protection, capture rewards, and automated win detection.*  
@@ -249,25 +288,31 @@ if (!safeCells[landingCell]) {
 
 ## 8. Top 10 Viva Questions & Perfect Answers
 
-#### Q1: What data structures did you use in this project?
+#### Q1: What data structures did you use in this project? Did you use ready-made STL?
 **Answer:**  
-> *"Mam, we used 4 primary data structures:*  
-> *1. **Queue (`std::queue`)** for the rolling dice history (FIFO).*  
-> *2. **Stack (`std::stack`)** for the move history to implement Undo (LIFO).*  
-> *3. **Linked List (`std::list`)** for the dynamic game events log.*  
-> *4. **1D & 2D Arrays** for the 52-cell track coordinates and home corridors."*
+> *"No, Mam! We wrote our own custom data structures from scratch using C++ classes and dynamic nodes:  
+> 1. **Custom Queue (`CustomQueue`)** for rolling dice history (FIFO).  
+> 2. **Custom Stack (`CustomStack`)** for move history to implement Undo (LIFO).  
+> 3. **Custom Linked List (`CustomLinkedList`)** for the dynamic game events log.  
+> 4. **1D & 2D Arrays** for the 52-cell track coordinates and home corridors."*
 
-#### Q2: Can you demonstrate how your Stack works?
+#### Q2: Can you explain how you built your Custom Stack from scratch?
 **Answer:**  
-> *"Yes, Mam! When any player moves a token, a `MoveRecord` struct containing previous positions is pushed onto `moveHistory` using `push()`. When we press the 'U' key, `moveHistory.top()` retrieves the last action, we reverse the token positions, and call `moveHistory.pop()`. This is a classic Last-In, First-Out (LIFO) stack application."*
+> *"Mam, our `CustomStack` is built using a linked node structure (`StackNode`) containing the move data and a `next` pointer. We maintain a `topNode` pointer:  
+> - In `push()`, we allocate a new node with `new StackNode(record)`, point its `next` to `topNode`, and update `topNode = newNode`.  
+> - In `pop()`, we save the top node, advance `topNode = topNode->next`, and `delete` the old node to avoid memory leaks.  
+> - When the player presses 'U', it pops the top move and restores the previous token position!"*
 
-#### Q3: Why did you use a Queue for dice history instead of an Array?
+#### Q3: Can you explain how you built your Custom Queue from scratch?
 **Answer:**  
-> *"Because dice history represents a First-In, First-Out (FIFO) stream. When a new roll arrives, it enters from the back (`push`), and when the count exceeds 5, the oldest roll drops off the front (`pop`). A queue naturally enforces this without manually shifting array elements."*
+> *"Mam, our `CustomQueue` uses `frontNode` and `rearNode` pointers.  
+> - In `push(val)` (enqueue), we add the new node at `rearNode->next` and update `rearNode`.  
+> - In `pop()` (dequeue), we remove the node from `frontNode`, advance `frontNode`, and free memory.  
+> This gives $O(1)$ operations for maintaining our rolling dice history window."*
 
-#### Q4: Why did you use a Linked List for the event log?
+#### Q4: Why did you build a Custom Linked List for the event log?
 **Answer:**  
-> *"A Linked List (`std::list`) allows $O(1)$ insertions at the end and $O(1)$ deletions from the front without needing to reallocate contiguous blocks of memory as vectors or arrays would."*
+> *"Our `CustomLinkedList` maintains `head` and `tail` pointers. Adding a message to the end (`push_back`) and dropping an old message from the front (`pop_front`) both take $O(1)$ time without any array reallocation or element shifting."*
 
 #### Q5: How do you mathematically map the 52-cell circular track?
 **Answer:**  
