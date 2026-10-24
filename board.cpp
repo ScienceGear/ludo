@@ -3,7 +3,7 @@
  * ============================================
  * This file handles the 15x15 grid layout, coordinate tables, and all drawing code.
  * 
- * HOW THE BOARD IS BUILT (SIMPLE EXPLANATION FOR MAM):
+ * BOARD LAYOUT OVERVIEW:
  * 1. 15x15 GRID: The whole board is a grid of 15 x 15 squares (each 40x40 pixels).
  * 2. FOUR BASES (6x6 cells each):
  *    - Red: top-left (0..5, 0..5)

@@ -1,37 +1,48 @@
-# LUDO GAME (C++ & SFML)
+# Ludo Game (C++ & SFML)
 
-A simple, classic 4-player Ludo game built in **C++** using **SFML** for 2D graphics. Everything is drawn cleanly using geometric shapes (rectangles, circles, triangles) and text with no external images required.
-
----
-
-## 1. What is Ludo? (Easy 3-Line Summary)
-* Ludo is a traditional board game played by 2 to 4 players (Red, Green, Yellow, Blue).
-* Each player has 4 tokens and takes turns rolling a 6-sided dice to race their tokens around the board.
-* The first player to safely guide all 4 tokens into the central home finish wins the game!
+A 4-player Ludo board game implemented in **C++** using **SFML** for graphical display. The project uses custom data structures built from scratch to manage game state, move history, and roll logs.
 
 ---
 
-## 2. Core Rules
-- **Starting:** Roll a **6** to bring a token out of your home base onto the start cell.
-- **Movement:** Active tokens advance clockwise around the 52-cell track by the dice roll number.
-- **Bonus Rolls:** A player gets an extra roll if they:
-  1. Roll a **6**.
-  2. Capture an opponent's token.
-  3. Reach the center finish.
-- **Safe Cells:** Marked with a star (`*`) or Start (`S`). Tokens on safe cells cannot be captured.
-- **Capturing:** If a token lands on an opponent's token on an unsafe cell, the opponent's token is captured and sent back to its home base!
-- **Home Corridor:** After completing a full circuit around the board, tokens enter their private colored 5-cell corridor where opponents cannot follow.
-- **Winning:** Tokens must land on the center finish with an exact dice roll. The first player with all 4 tokens finished wins!
+## 1. Overview
+* Classic 4-player Ludo rules (Red, Green, Yellow, Blue).
+* Each player has 4 tokens navigating a 52-cell track toward the center finish.
+* Visual interface rendered with SFML 2D shapes and text.
+* Features include capture mechanics, bonus turns, and move undo.
 
 ---
 
-## 3. How to Compile and Run
+## 2. Rules of the Game
+- **Base Exit:** A player must roll a **6** to move a token from home base to the start position.
+- **Track Movement:** Tokens advance clockwise around the perimeter by the rolled dice value.
+- **Safe Cells:** Marked with star (`*`) or Start (`S`). Tokens on safe cells cannot be captured.
+- **Capturing:** Landing on an opponent's token on an unsafe cell sends that token back to its home base and awards a bonus roll.
+- **Bonus Turns:** Awarded on rolling a 6, capturing an opponent token, or reaching the center finish.
+- **Home Path:** After completing a full circuit, tokens enter their private colored corridor.
+- **Winning:** Tokens must land on the center finish with an exact roll. The first player to bring all 4 tokens to the center wins.
 
-### Requirements
-- **GCC / MinGW C++ Compiler** (supporting C++17)
-- **SFML 3** (the required DLLs are already included in the project folder)
+---
 
-### Compile Command:
+## 3. Controls
+
+| Action | Input |
+|---|---|
+| **Roll Dice** | `SPACE` or click Dice panel |
+| **Move Token** | `1`, `2`, `3`, `4` or click token / button |
+| **Undo Move** | `U` or click Undo button |
+| **Restart** | `R` |
+| **Quit** | `ESC` |
+| **Start Game** | `ENTER` or `SPACE` |
+
+---
+
+## 4. Compilation & Execution
+
+### Prerequisites
+- GCC / MinGW C++ compiler (C++17 support)
+- SFML 3 (required runtime DLLs are provided in the repository)
+
+### Build Command:
 ```bash
 g++ -std=c++17 main.cpp game.cpp board.cpp -o ludo.exe -lsfml-graphics -lsfml-window -lsfml-system
 ```
@@ -43,116 +54,58 @@ g++ -std=c++17 main.cpp game.cpp board.cpp -o ludo.exe -lsfml-graphics -lsfml-wi
 
 ---
 
-## 4. Game Controls
+## 5. Board Architecture & Coordinate System
 
-| Action | Control |
-|---|---|
-| **Roll Dice** | Press `SPACE` or Click the Dice box |
-| **Move Token** | Press `1`, `2`, `3`, `4` or Click Token / Button |
-| **Restart Game** | Press `R` |
-| **Quit Game** | Press `ESC` |
-| **Start from Title** | Press `ENTER` |
-
----
-
-## 5. How the Board is Built (Simple Explanation for Mam)
-
-The entire board is built on a standard **15 × 15 grid** (`CELL_SIZE = 40 pixels`):
+The board is mapped to a **15 × 15 grid** (`CELL_SIZE = 40 pixels`):
 1. **Four Corner Bases (6×6 cells each):**
-   - Top-Left: **Red Base**
-   - Top-Right: **Green Base**
-   - Bottom-Right: **Yellow Base**
-   - Bottom-Left: **Blue Base**
-   - Each base has a large colored square with an inner white area holding 4 circular token slots.
+   - Top-Left: Red Base
+   - Top-Right: Green Base
+   - Bottom-Right: Yellow Base
+   - Bottom-Left: Blue Base
 2. **Four Arms (6×3 cells each):**
-   - Contains the 52-cell white walking track.
-   - Includes the 4 colored start cells (`S`) and 4 safe star cells (`*`).
-   - Contains the 5-cell colored home corridor for each player.
-3. **Center Finish (3×3 cells in the middle):**
-   - 4 colored triangles (Red, Green, Yellow, Blue) meeting at a central golden circle where tokens finish.
+   - 52-cell circular path shared by all players.
+   - 4 colored start cells and 4 safe star cells.
+   - 5-cell private corridor for each player.
+3. **Center Finish (3×3 cells):**
+   - 4 colored triangular zones meeting at the center finish circle.
 
 ---
 
-## 6. How Token Movement Works (`step` Variable: 0 to 57)
+## 6. Token Progress (`step` System)
 
-To keep the project easy to understand, each token tracks its progress using a single integer: **`step`**:
-
+Each token tracks its board position using an integer index `step` (0 to 57):
 ```
-[step = 0]       -> Inside Home Base (waiting for a 6)
-[step = 1]       -> At Player's Start Cell (exited base)
-[step = 1 to 51] -> Moving clockwise around the 52-cell board
-                    Cell Index on Board = (PlayerStart + step - 1) % 52
-[step = 52 to 56]-> Moving up the Player's Private Colored Corridor
-[step = 57]      -> CENTER FINISH! Token is finished.
+[step = 0]        Home base (waiting for roll of 6)
+[step = 1]        Player start cell
+[step = 1 to 51]  Active on outer 52-cell track
+                  Board cell = (playerStartCell + step - 1) % 52
+[step = 52 to 56] Private colored home corridor
+[step = 57]       Finished (center goal reached)
 ```
-
-### Why this is so easy to explain:
-- When a token is at home, rolling a 6 sets `step = 1`.
-- When an active token moves, we simply do: `step += diceValue`.
-- If `step + diceValue > 57`, the token cannot move (needs exact roll).
-- When `step == 57`, the token is marked finished (`tokensFinished++`).
-- When all 4 tokens reach 57, that player wins!
 
 ---
 
-## 7. Custom Data Structures (Built From Scratch - NO STL!)
+## 7. Data Structures
 
-Instead of using ready-made library containers (`std::queue`, `std::stack`, `std::list`), **we built our own custom data structures from scratch using pointers and dynamic nodes (`new` and `delete`)**:
+The project implements custom data structure classes without relying on STL container adapters:
 
-| Data Structure | Implementation | Where Used | Why Chosen |
+| Data Structure | Class / Type | Usage | Description |
 |---|---|---|---|
-| **CUSTOM QUEUE (FIFO)** | `class CustomQueue` with `QueueNode` (`frontNode`, `rearNode`) | `rollDice()`, displayed on UI | **First-In, First-Out (FIFO):** Stores the last 5 dice rolls. New rolls are enqueued at the rear (`push`), and the oldest roll is dequeued from the front (`pop`) when size > 5. Displayed on the right sidebar. |
-| **CUSTOM STACK (LIFO)** | `class CustomStack` with `StackNode` (`topNode`) | `moveToken()`, `undoLastMove()` | **Last-In, First-Out (LIFO):** Powers the **Undo feature (Press 'U')**! Every move is pushed onto the top of the stack (`push`). Pressing 'U' pops the most recent move from the top (`pop`) and restores the previous token position and turn. |
-| **CUSTOM LINKED LIST** | `class CustomLinkedList` with `ListNode` (`head`, `tail`) | `addActionLog()`, displayed on UI | **Singly Linked List:** Efficiently appends event log messages at the tail (`push_back`) and removes old logs from the head (`pop_front`) in $O(1)$ time without reallocating arrays. |
-| **1D ARRAYS** | `boardPathX[52], boardPathY[52]` | Board path lookup | Fixed-size array storing grid coordinates for the 52 main path cells. Provides instant **O(1)** indexing. |
-| **2D ARRAYS (Matrices)** | `corridorX[4][5], corridorY[4][5]` | Home corridor lookup | 2D matrix storing the 5 colored corridor cells for each of the 4 players. |
-| **BOOLEAN ARRAY** | `safeCells[52]` | Capture checks | Fast **O(1)** lookup to check if a landing cell is a protected safe star or start cell. |
-| **STRUCTS** | `Token`, `Player`, `MoveRecord` | State encapsulation | Groups related data members (id, step, status, colors) into structured objects. |
+| **Queue** | `CustomQueue` | Dice roll history | FIFO linked queue storing the last 5 dice rolls displayed on the UI sidebar. |
+| **Stack** | `CustomStack` | Move history / Undo | LIFO linked stack storing `MoveRecord` states for rolling back turns on pressing `U`. |
+| **Linked List** | `CustomLinkedList` | Event log | Singly linked list storing the latest game action messages. |
+| **1D Arrays** | `boardPathX[52]`, `boardPathY[52]` | Board path lookup | Static coordinate map for the 52 perimeter cells. |
+| **2D Arrays** | `corridorX[4][5]`, `corridorY[4][5]` | Home corridor lookup | Grid coordinates for each player's 5-cell corridor. |
+| **Boolean Array**| `safeCells[52]` | Capture checks | Lookup table marking star and start cells as protected from captures. |
+| **Structs** | `Token`, `Player`, `MoveRecord` | State management | Encapsulates token attributes, player data, and snapshot records for undo operations. |
 
 ---
 
-## 8. Presentation / Viva Questions & Answers (Cheat Sheet for Mam!)
+## 8. Module Division
 
-**Q1: What data structures did you use in this project? Did you use ready-made STL?**  
-> *"No, Mam! We wrote our own custom data structures from scratch using C++ classes and linked nodes:  
-> 1. **Custom Queue (`CustomQueue`)** for the rolling dice history (FIFO).  
-> 2. **Custom Stack (`CustomStack`)** for the move history to implement Undo (LIFO).  
-> 3. **Custom Linked List (`CustomLinkedList`)** for the live game event log.  
-> 4. **1D & 2D Arrays** for the 52-cell track coordinates and home corridors."*
-
-**Q2: How does your Custom Stack work for the Undo feature?**  
-> *"Mam, our Custom Stack works on Last-In, First-Out (LIFO). Whenever a player moves a token, we push a `MoveRecord` containing the previous step and status onto our linked stack. If the player presses 'U', we pop the top node from the stack, free the memory, and restore the previous state, undoing the move."*
-
-**Q3: How does your Custom Queue work for the dice history?**  
-> *"Mam, our Custom Queue works on First-In, First-Out (FIFO) using `frontNode` and `rearNode` pointers. Whenever the dice is rolled, we push the new roll to the rear. When the queue size exceeds 5, we pop the oldest roll from the front. This maintains a rolling display of recent rolls on the sidebar."*
-
-**Q4: How do you represent the Ludo board on the screen?**  
-> *"Mam, we divided the board into a 15 by 15 mathematical grid of 40-pixel squares. The 4 corners are 6x6 squares for player bases, the 4 arms are 6x3 rectangles for the tracks, and the center is 3x3 with 4 triangles meeting at the finish."*
-
-**Q5: How do tokens move around the board?**  
-> *"Each token has a `step` variable from 0 to 57. Step 0 is the base. Rolling a 6 moves it to step 1. Steps 1 to 51 move along the main circular path. Steps 52 to 56 move up the player's colored corridor, and step 57 is the center finish."*
-
-**Q6: How does capture detection work?**  
-> *"When a token moves, we calculate which board cell it lands on using `(startCell + step - 1) % 52`. If that cell is not marked safe in our `safeCells` array, we check if any opponent token is on that exact cell. If so, the opponent's `step` and `status` are reset to 0 (sent back to base), and the player earns a bonus roll."*
-
-**Q4: How do you prevent tokens from overshooting the finish?**  
-> *"Before moving, we check `if (step + diceValue <= 57)`. If the roll would exceed 57, the move is invalid and the token cannot be moved."*
-
-**Q5: How does the game detect a winner?**  
-> *"Each player tracks `tokensFinished`. When a token reaches step 57, `tokensFinished` increments. When any player reaches 4 finished tokens, `checkWin()` returns true and displays the victory screen."*
-
----
-
-## 9. Team Member Division
-
-| Member | Module | Key Responsibility |
-|---|---|---|
-| **Member 1** | `ludo.h` | Data structures (`Token`, `Player`), constants, and function prototypes. |
-| **Member 2** | `board.cpp` (Layout) | 15x15 grid layout, 52-cell coordinate mapping, and safe cells. |
-| **Member 3** | `board.cpp` (Drawing) | Drawing base boxes, triangles, tokens, dice dots, and sidebar UI. |
-| **Member 4** | `game.cpp` (Game Logic) | Dice rolling, `step` advancement, capture rules, and win detection. |
-| **Member 5** | `main.cpp` + Documentation | SFML event loop, keyboard & mouse controls, and presentation guide. |
-
----
-
-*Developed for college programming lab project demonstration.*
+| File | Primary Responsibility |
+|---|---|
+| `ludo.h` | Constants, struct definitions, custom data structures, and function declarations. |
+| `board.cpp` | Board layout math, coordinate tables, and SFML rendering functions. |
+| `game.cpp` | Core rules, movement validation, capture logic, turn cycle, and undo handling. |
+| `main.cpp` | Application entry point, window management, and input polling loop. |
