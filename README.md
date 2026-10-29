@@ -30,6 +30,8 @@ A 4-player Ludo board game implemented in **C++** using **SFML** for graphical d
 | **Roll Dice** | `SPACE` or click Dice panel |
 | **Move Token** | `1`, `2`, `3`, `4` or click token / button |
 | **Undo Move** | `U` or click Undo button |
+| **Save Game** | `S` (writes `savegame.txt`) |
+| **Load Game** | `L` (reads `savegame.txt`) |
 | **Restart** | `R` |
 | **Quit** | `ESC` |
 | **Start Game** | `ENTER` or `SPACE` |
@@ -109,3 +111,43 @@ The project implements custom data structure classes without relying on STL cont
 | `board.cpp` | Board layout math, coordinate tables, and SFML rendering functions. |
 | `game.cpp` | Core rules, movement validation, capture logic, turn cycle, and undo handling. |
 | `main.cpp` | Application entry point, window management, and input polling loop. |
+
+---
+
+## 9. Save / Load Game (File Handling)
+
+The game supports saving and resuming progress using plain text file handling (`ofstream` / `ifstream`).
+
+### What is saved
+- `numPlayers`, `currentPlayerIndex`, `currentDiceValue`
+- `isRolling`, `canRollAgain`, `gameOver`, `winnerIndex`
+- For every player: `tokensFinished`, plus each token's `step` and `status`
+
+### File format (`savegame.txt`)
+A simple text file with one value per line (or space-separated pairs for tokens), making it easy to inspect or edit manually.
+
+### How it works
+- Press **`S`** to save the current match to `savegame.txt`.
+- Press **`L`** to load the last saved match from `savegame.txt`.
+- On successful load, the turn, dice value, and all token positions are restored exactly.
+
+### Example saved state
+```text
+4
+0
+6
+1
+1
+0
+-1
+0
+0 0
+1 0
+2 0
+3 0
+0
+1 1
+2 1
+3 1
+...
+```

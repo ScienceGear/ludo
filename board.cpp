@@ -749,7 +749,7 @@ void drawUI(RenderWindow &window) {
     line2.setFillColor(Color(225, 230, 235));
     window.draw(line2);
 
-    Text helpText(gameFont, "SPACE = Roll | 1-4 = Move | U = Undo\nR = Restart | ESC = Quit", 10);
+    Text helpText(gameFont, "SPACE = Roll | 1-4 = Move | U = Undo\nS = Save | L = Load | R = Restart | ESC = Quit", 10);
     helpText.setFillColor(Color(120, 125, 135));
     helpText.setPosition(Vector2f(panelX + 15, helpY + 8));
     window.draw(helpText);

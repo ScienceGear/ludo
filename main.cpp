@@ -75,6 +75,22 @@ int main() {
                     else if (keyPressed->code == Keyboard::Key::U) {
                         undoLastMove();
                     }
+                    // Save game with S
+                    else if (keyPressed->code == Keyboard::Key::S) {
+                        if (saveGame("savegame.txt")) {
+                            statusMessage = "Game saved to savegame.txt!";
+                        } else {
+                            statusMessage = "Failed to save game!";
+                        }
+                    }
+                    // Load game with L
+                    else if (keyPressed->code == Keyboard::Key::L) {
+                        if (loadGame("savegame.txt")) {
+                            statusMessage = "Game loaded from savegame.txt!";
+                        } else {
+                            statusMessage = "No save file found!";
+                        }
+                    }
                     else if (keyPressed->code == Keyboard::Key::R) {
                         initializeGame(4);
                         state = STATE_GAME;

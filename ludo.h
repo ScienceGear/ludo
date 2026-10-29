@@ -319,4 +319,8 @@ bool selectTokenById(int tokenId);
 bool selectTokenAtPosition(float mouseX, float mouseY);
 int getPlayerStartCell(int playerIndex);
 
+// Save / Load game state (file handling)
+bool saveGame(const string& filename = "savegame.txt");
+bool loadGame(const string& filename = "savegame.txt");
+
 #endif // LUDO_H

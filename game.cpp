@@ -1,5 +1,6 @@
 #include "ludo.h"
 #include <cmath>
+#include <fstream>
 
 int currentPlayerIndex = 0;
 int numPlayers = 4;
@@ -269,6 +270,61 @@ bool undoLastMove() {
     gameOver = false;
     statusMessage = "Undid move for " + players[currentPlayerIndex].name + "! Press 1-4 to pick another.";
     addActionLog("UNDO: Restored " + players[currentPlayerIndex].name + " Token " + to_string(rec.tokenId + 1));
+
+    return true;
+}
+
+// ========================== SAVE / LOAD GAME ==========================
+// Saves full game state to a text file so the game can be resumed later.
+bool saveGame(const string& filename) {
+    ofstream out(filename);
+    if (!out.is_open()) return false;
+
+    out << numPlayers << "\n";
+    out << currentPlayerIndex << "\n";
+    out << currentDiceValue << "\n";
+    out << isRolling << "\n";
+    out << canRollAgain << "\n";
+    out << gameOver << "\n";
+    out << winnerIndex << "\n";
+
+    for (int p = 0; p < numPlayers; p++) {
+        out << players[p].tokensFinished << "\n";
+        for (int t = 0; t < TOKENS_PER_PLAYER; t++) {
+            out << players[p].tokens[t].step << " " << players[p].tokens[t].status << "\n";
+        }
+    }
+
+    out.close();
+    return true;
+}
+
+// Loads game state from a text file.
+bool loadGame(const string& filename) {
+    ifstream in(filename);
+    if (!in.is_open()) return false;
+
+    in >> numPlayers;
+    if (numPlayers < 2) numPlayers = 2;
+    if (numPlayers > 4) numPlayers = 4;
+
+    in >> currentPlayerIndex >> currentDiceValue >> isRolling >> canRollAgain >> gameOver >> winnerIndex;
+
+    for (int p = 0; p < numPlayers; p++) {
+        in >> players[p].tokensFinished;
+        for (int t = 0; t < TOKENS_PER_PLAYER; t++) {
+            in >> players[p].tokens[t].step >> players[p].tokens[t].status;
+        }
+    }
+
+    in.close();
+
+    statusMessage = players[currentPlayerIndex].name + "'s turn.";
+    if (isRolling) {
+        statusMessage += " Press SPACE to roll!";
+    } else {
+        statusMessage += " Select token 1-4.";
+    }
 
     return true;
 }
